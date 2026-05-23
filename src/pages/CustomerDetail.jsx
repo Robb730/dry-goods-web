@@ -340,7 +340,7 @@ export default function CustomerDetail() {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', fontFamily: F }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: F }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 28, height: 28, border: '2.5px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 12px' }} />
@@ -350,7 +350,7 @@ export default function CustomerDetail() {
   )
 
   if (error && !customer) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', fontFamily: F, textAlign: 'center', padding: '0 24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: F, textAlign: 'center', padding: '0 24px' }}>
       <div>
         <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 12 }}>{error}</p>
         <button onClick={() => navigate(-1)} style={{ fontSize: 13, color: '#0f172a', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontFamily: F }}>← Go back</button>
@@ -402,7 +402,7 @@ export default function CustomerDetail() {
   const lastEntry = withBalances[withBalances.length - 1]
 
   return (
-    <div style={{ fontFamily: F, background: '#f1f5f9', height: '100dvh', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: F, background: '#f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         .no-scrollbar::-webkit-scrollbar { display: none }

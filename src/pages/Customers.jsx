@@ -88,7 +88,7 @@ export default function Customers() {
   const F = "'Sora', sans-serif"
 
   return (
-    <div style={{ fontFamily: F, display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 16px 0', overflow: 'hidden' }}>
+    <div style={{ fontFamily: F, display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 16px 0', overflow: 'hidden', paddingBottom: 96 }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         .cust-row:active { background: #f8fafc !important; }
@@ -219,6 +219,8 @@ export default function Customers() {
         borderRadius: 18,
         border: '1px solid #f0f0f0',
         minHeight: 0,
+        
+        paddingBottom: 16,
       }}>
         {/* Loading */}
         {loading && [...Array(7)].map((_, i) => <SkeletonRow key={i} />)}
