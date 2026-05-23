@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: #f0f4ff;
+  color: #1e293b;
+  font-family: 'DM Sans', sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Smooth scrolling in main content */
+main {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS safe area for bottom nav */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide scrollbar but keep scrolling */
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+}
