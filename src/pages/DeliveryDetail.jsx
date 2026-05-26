@@ -219,7 +219,7 @@ function ConfirmModal({
 
 function ItemCard({ item, isChecked, qty, onToggle, onQtyChange }) {
   const isAbovePacked = qty > item.quantity_dozen;
-const isBelowPacked = qty < item.quantity_dozen && isChecked;
+  const isBelowPacked = qty < item.quantity_dozen && isChecked;
   const lineTotal = item.price_per_dozen * qty;
 
   let borderColor, iconBg, iconColor, cardBg, checkColor;
@@ -356,10 +356,10 @@ const isBelowPacked = qty < item.quantity_dozen && isChecked;
             Delivery qty
           </span>
           <QtyStepper
-  value={qty}
-  packedQty={item.quantity_dozen}
-  onChange={onQtyChange}
-/>
+            value={qty}
+            packedQty={item.quantity_dozen}
+            onChange={onQtyChange}
+          />
         </div>
       )}
     </div>
@@ -423,8 +423,7 @@ export default function DeliveryDetail() {
         setItems(loaded);
         setCheckedIds(new Set());
         const initQtys = {};
-        for (const item of loaded)
-          initQtys[item.id] = item._quantity_dozen;
+        for (const item of loaded) initQtys[item.id] = item.quantity_dozen;
         setQtys(initQtys);
       } catch (e) {
         console.error(e);
@@ -455,16 +454,15 @@ export default function DeliveryDetail() {
 
   const finalTotal = activeItems.reduce(
     (sum, item) =>
-      sum +
-      item.price_per_dozen * (qtys[item.id] ?? item.fulfilled_quantity_dozen),
+      sum + item.price_per_dozen * (qtys[item.id] ?? item.quantity_dozen),
     0,
   );
   const originalTotal = Number(order?.order_total ?? 0);
   const totalChanged = Math.abs(finalTotal - originalTotal) > 0.001;
 
   const adjustedCount = activeItems.filter((i) => {
-    const q = qtys[i.id] ?? i.fulfilled_quantity_dozen;
-    return q !== i.fulfilled_quantity_dozen;
+    const q = qtys[i.id] ?? i.quantity_dozen;
+    return q !== i.quantity_dozen;
   }).length;
 
   const filteredChecked = filteredItems.filter((i) =>
@@ -493,9 +491,8 @@ export default function DeliveryDetail() {
         await supabase
           .from("order_items")
           .update({
-            fulfilled: delivering,
             fulfilled_quantity_dozen: delivering
-              ? (qtys[item.id] ?? item.fulfilled_quantity_dozen)
+              ? (qtys[item.id] ?? item.quantity_dozen)
               : 0,
           })
           .eq("id", item.id);
