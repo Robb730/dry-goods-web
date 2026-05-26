@@ -408,14 +408,18 @@ export default function DeliveryDetail() {
         const { data: itemData, error: itemErr } = await supabase
           .from("order_items")
           .select(
-            "id, product_name, product_size, price_per_dozen, fulfilled_quantity_dozen, quantity_dozen",
+            "id, price_per_dozen, fulfilled_quantity_dozen, quantity_dozen, products ( size, categories ( name ) )",
           )
           .eq("order_id", id)
-          .eq("fulfilled", true)
+          .eq("fulfilled", false)
           .order("id");
         if (itemErr) throw itemErr;
 
-        const loaded = itemData ?? [];
+        const loaded = (itemData ?? []).map((item) => ({
+          ...item,
+          product_name: item.products?.categories?.name ?? "Unknown",
+          product_size: item.products?.size ?? "—",
+        }));
         setItems(loaded);
         setCheckedIds(new Set());
         const initQtys = {};
@@ -481,28 +485,39 @@ export default function DeliveryDetail() {
   }
 
   async function handleConfirm() {
-  setSubmitting(true); setError(null)
-  try {
-    for (const item of items) {
-      const delivering = checkedIds.has(item.id)
-      await supabase.from('order_items').update({
-        fulfilled: delivering,
-        fulfilled_quantity_dozen: delivering ? (qtys[item.id] ?? item.fulfilled_quantity_dozen) : 0,
-      }).eq('id', item.id)
+    setSubmitting(true);
+    setError(null);
+    try {
+      for (const item of items) {
+        const delivering = checkedIds.has(item.id);
+        await supabase
+          .from("order_items")
+          .update({
+            fulfilled: delivering,
+            fulfilled_quantity_dozen: delivering
+              ? (qtys[item.id] ?? item.fulfilled_quantity_dozen)
+              : 0,
+          })
+          .eq("id", item.id);
+      }
+
+      await supabase
+        .from("orders")
+        .update({
+          status: "delivered",
+          order_total: finalTotal,
+          delivered_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      navigate("/delivery", { replace: true });
+    } catch (e) {
+      console.error(e);
+      setError("Failed to save: " + (e?.message ?? "Unknown error"));
+      setSubmitting(false);
+      setShowConfirm(false);
     }
-
-    await supabase.from('orders').update({
-      status: 'delivered', order_total: finalTotal, delivered_at: new Date().toISOString(),
-    }).eq('id', id)
-
-    
-    navigate('/delivery', { replace: true })
-  } catch (e) {
-    console.error(e)
-    setError('Failed to save: ' + (e?.message ?? 'Unknown error'))
-    setSubmitting(false); setShowConfirm(false)
   }
-}
 
   if (loading) {
     return (
