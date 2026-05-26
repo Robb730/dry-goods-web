@@ -218,8 +218,8 @@ function ConfirmModal({
 // ─── Item Card ────────────────────────────────────────────────────────────────
 
 function ItemCard({ item, isChecked, qty, onToggle, onQtyChange }) {
-  const isAbovePacked = qty > item.fulfilled_quantity_dozen;
-  const isBelowPacked = qty < item.fulfilled_quantity_dozen && isChecked;
+  const isAbovePacked = qty > item.quantity_dozen;
+const isBelowPacked = qty < item.quantity_dozen && isChecked;
   const lineTotal = item.price_per_dozen * qty;
 
   let borderColor, iconBg, iconColor, cardBg, checkColor;
@@ -356,10 +356,10 @@ function ItemCard({ item, isChecked, qty, onToggle, onQtyChange }) {
             Delivery qty
           </span>
           <QtyStepper
-            value={qty}
-            packedQty={item.fulfilled_quantity_dozen}
-            onChange={onQtyChange}
-          />
+  value={qty}
+  packedQty={item.quantity_dozen}
+  onChange={onQtyChange}
+/>
         </div>
       )}
     </div>
@@ -424,7 +424,7 @@ export default function DeliveryDetail() {
         setCheckedIds(new Set());
         const initQtys = {};
         for (const item of loaded)
-          initQtys[item.id] = item.fulfilled_quantity_dozen;
+          initQtys[item.id] = item._quantity_dozen;
         setQtys(initQtys);
       } catch (e) {
         console.error(e);
@@ -733,7 +733,7 @@ export default function DeliveryDetail() {
               key={item.id}
               item={item}
               isChecked={checkedIds.has(item.id)}
-              qty={qtys[item.id] ?? item.fulfilled_quantity_dozen}
+              qty={qtys[item.id] ?? item.quantity_dozen}
               onToggle={() => toggleItem(item.id)}
               onQtyChange={(val) => setQty(item.id, val)}
             />
