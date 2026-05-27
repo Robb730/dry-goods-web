@@ -370,7 +370,8 @@ export default function DeliveryDetail() {
         }).eq("id", item.id);
       }
       const updatePayload = { status: "delivered", order_total: finalTotal, delivered_at: new Date().toISOString() };
-      if (totalProfit != null) updatePayload.profit = totalProfit;
+// if (totalProfit != null) updatePayload.profit = totalProfit;
+      // if (totalProfit != null) updatePayload.profit = totalProfit;
       await supabase.from("orders").update(updatePayload).eq("id", id);
       navigate("/delivery", { replace: true });
     } catch (e) {
