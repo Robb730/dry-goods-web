@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Truck, CheckCircle, RefreshCw, MapPin, ChevronRight } from 'lucide-react'
+import { Truck, CheckCircle, RefreshCw, MapPin, ChevronRight, Eye, EyeOff, TrendingUp } from 'lucide-react'
 
 function formatPeso(n) {
   if (n == null || isNaN(n)) return '₱0.00'
@@ -18,7 +18,37 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d ago`
 }
 
-function OrderCard({ order, onTap }) {
+// Compute profit from order_items rows (same logic as DeliveryDetail)
+function computeProfit(items) {
+  const hasCost = items.some((i) => i.products?.base_price != null)
+  if (!hasCost) return null
+  return items.reduce((sum, item) => {
+    const bp = item.products?.base_price
+    if (bp == null) return sum
+    return sum + (item.price_per_dozen - bp) * item.fulfilled_quantity_dozen
+  }, 0)
+}
+
+function ProfitBadge({ profit, total }) {
+  if (profit == null) return null
+  const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : null
+  return (
+    <div className="flex flex-col items-end shrink-0">
+      <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg"
+        style={{ background: profit >= 0 ? '#dcfce7' : '#ffe4e6', border: `1px solid ${profit >= 0 ? '#86efac' : '#fca5a5'}` }}>
+        <TrendingUp size={10} color={profit >= 0 ? '#15803d' : '#be123c'} strokeWidth={2.5} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: profit >= 0 ? '#15803d' : '#be123c', letterSpacing: '-0.01em' }}>
+          {formatPeso(profit)}
+        </span>
+      </div>
+      {margin != null && (
+        <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 1 }}>{margin}% margin</span>
+      )}
+    </div>
+  )
+}
+
+function OrderCard({ order, onTap, showProfit }) {
   return (
     <button
       onClick={() => onTap(order)}
@@ -37,17 +67,21 @@ function OrderCard({ order, onTap }) {
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <div className="text-right">
-          <p className="text-sm font-bold text-slate-800">{formatPeso(order.order_total)}</p>
-          <p className="text-xs text-slate-400">total</p>
-        </div>
+        {showProfit && order.computed_profit != null ? (
+          <ProfitBadge profit={order.computed_profit} total={order.order_total} />
+        ) : (
+          <div className="text-right">
+            <p className="text-sm font-bold text-slate-800">{formatPeso(order.order_total)}</p>
+            <p className="text-xs text-slate-400">total</p>
+          </div>
+        )}
         <ChevronRight size={16} className="text-slate-300" />
       </div>
     </button>
   )
 }
 
-function DeliveredCard({ order }) {
+function DeliveredCard({ order, showProfit }) {
   return (
     <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-3"
       style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
@@ -63,8 +97,55 @@ function DeliveredCard({ order }) {
         </p>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-slate-800">{formatPeso(order.order_total)}</p>
-        <p className="text-xs text-green-500 font-semibold">Delivered</p>
+        {showProfit && order.computed_profit != null ? (
+          <ProfitBadge profit={order.computed_profit} total={order.order_total} />
+        ) : (
+          <>
+            <p className="text-sm font-bold text-slate-800">{formatPeso(order.order_total)}</p>
+            <p className="text-xs text-green-500 font-semibold">Delivered</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ProfitSummaryBanner({ orders }) {
+  const ordersWithProfit = orders.filter((o) => o.computed_profit != null)
+  if (ordersWithProfit.length === 0) return null
+
+  const totalProfit = ordersWithProfit.reduce((s, o) => s + o.computed_profit, 0)
+  const totalRevenue = ordersWithProfit.reduce((s, o) => s + Number(o.order_total), 0)
+  const margin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : null
+
+  return (
+    <div className="rounded-2xl overflow-hidden mb-3"
+      style={{ background: 'linear-gradient(135deg, #14532d, #166534)', border: '1.5px solid #4ade80' }}>
+      <div className="px-4 pt-2.5 pb-1">
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#4ade80' }}>
+          💰 PROFIT SUMMARY · {ordersWithProfit.length} ORDER{ordersWithProfit.length !== 1 ? 'S' : ''}
+        </p>
+      </div>
+      <div className="flex pb-3">
+        <div className="flex-1 flex flex-col items-center px-3 py-1">
+          <span style={{ fontSize: 10, color: '#86efac', fontWeight: 600, letterSpacing: '0.05em' }}>TOTAL PROFIT</span>
+          <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+            {formatPeso(totalProfit)}
+          </span>
+          {margin != null && (
+            <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>{margin}% avg margin</span>
+          )}
+        </div>
+        <div style={{ width: 1, background: '#166534', margin: '8px 0' }} />
+        <div className="flex-1 flex flex-col items-center px-3 py-1">
+          <span style={{ fontSize: 10, color: '#86efac', fontWeight: 600, letterSpacing: '0.05em' }}>TOTAL REVENUE</span>
+          <span style={{ fontSize: 22, fontWeight: 900, color: '#86efac', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+            {formatPeso(totalRevenue)}
+          </span>
+          <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>
+            {ordersWithProfit.length} of {orders.length} tracked
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -72,11 +153,12 @@ function DeliveredCard({ order }) {
 
 export default function OutForDelivery() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState('out') // 'out' | 'delivered'
+  const [tab, setTab] = useState('out')
   const [outOrders, setOutOrders] = useState([])
   const [deliveredOrders, setDeliveredOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showProfit, setShowProfit] = useState(false)
 
   async function fetchOrders() {
     setLoading(true)
@@ -88,12 +170,22 @@ export default function OutForDelivery() {
       const [{ data: outData, error: outErr }, { data: delivData, error: delivErr }] = await Promise.all([
         supabase
           .from('orders')
-          .select('id, customer_id, order_total, created_at, customers ( name, location )')
+          .select(`
+            id, customer_id, order_total, created_at,
+            customers ( name, location ),
+            order_items ( price_per_dozen, fulfilled_quantity_dozen, quantity_dozen,
+              products ( base_price ) )
+          `)
           .eq('status', 'out_for_delivery')
           .order('created_at', { ascending: false }),
         supabase
           .from('orders')
-          .select('id, customer_id, order_total, created_at, delivered_at, customers ( name, location )')
+          .select(`
+            id, customer_id, order_total, created_at, delivered_at,
+            customers ( name, location ),
+            order_items ( price_per_dozen, fulfilled_quantity_dozen, quantity_dozen,
+              products ( base_price ) )
+          `)
           .eq('status', 'delivered')
           .gte('delivered_at', todayStart.toISOString())
           .order('delivered_at', { ascending: false }),
@@ -102,16 +194,36 @@ export default function OutForDelivery() {
       if (outErr) throw outErr
       if (delivErr) throw delivErr
 
-      const map = (o) => ({
-        ...o,
-        customer_name:     o.customers?.name     ?? '—',
-        customer_location: o.customers?.location ?? '—',
-      })
+      const map = (o) => {
+        // For out_for_delivery: use quantity_dozen (not yet fulfilled)
+        // For delivered: use fulfilled_quantity_dozen
+        const items = o.order_items ?? []
+        const isDelivered = !!o.delivered_at
+        const profitItems = isDelivered
+          ? items.filter((i) => i.fulfilled_quantity_dozen > 0)
+          : items
+
+        // Use fulfilled qty for delivered, packed qty for out-for-delivery
+        const profitItemsMapped = profitItems.map((i) => ({
+          ...i,
+          fulfilled_quantity_dozen: isDelivered
+            ? i.fulfilled_quantity_dozen
+            : i.quantity_dozen,
+        }))
+
+        return {
+          ...o,
+          customer_name: o.customers?.name ?? '—',
+          customer_location: o.customers?.location ?? '—',
+          computed_profit: computeProfit(profitItemsMapped),
+        }
+      }
 
       setOutOrders((outData ?? []).map(map))
       setDeliveredOrders((delivData ?? []).map(map))
     } catch (e) {
-      setError('Failed to load orders.')
+      console.error(e)
+      setError('Failed to load orders: ' + (e?.message ?? 'Unknown error'))
     } finally {
       setLoading(false)
     }
@@ -120,10 +232,11 @@ export default function OutForDelivery() {
   useEffect(() => { fetchOrders() }, [])
 
   const orders = tab === 'out' ? outOrders : deliveredOrders
+  const hasAnyProfit = orders.some((o) => o.computed_profit != null)
 
   return (
     <div>
-      {/* Tabs + Refresh */}
+      {/* Tabs + controls row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100">
           <button
@@ -163,14 +276,36 @@ export default function OutForDelivery() {
             )}
           </button>
         </div>
-        <button
-          onClick={fetchOrders}
-          disabled={loading}
-          className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors disabled:opacity-40"
-        >
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+
+        {/* Right controls */}
+        <div className="flex items-center gap-2">
+          {!loading && hasAnyProfit && (
+            <button
+              onClick={() => setShowProfit((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all active:scale-95"
+              style={{
+                background: showProfit ? 'linear-gradient(135deg, #14532d, #166534)' : '#f1f5f9',
+                border: `1.5px solid ${showProfit ? '#4ade80' : '#e2e8f0'}`,
+                boxShadow: showProfit ? '0 2px 8px rgba(22,163,74,0.2)' : 'none',
+              }}
+            >
+              {showProfit
+                ? <Eye size={12} color="#4ade80" strokeWidth={2.5} />
+                : <EyeOff size={12} color="#94a3b8" strokeWidth={2.5} />}
+              <span style={{ fontSize: 11, fontWeight: 700, color: showProfit ? '#4ade80' : '#64748b' }}>
+                Profit
+              </span>
+            </button>
+          )}
+          <button
+            onClick={fetchOrders}
+            disabled={loading}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -210,22 +345,26 @@ export default function OutForDelivery() {
         </div>
       )}
 
-      {/* Order cards */}
+      {/* Order list */}
       {!loading && !error && orders.length > 0 && (
-        <div className="flex flex-col gap-3 mt-3">
-          {tab === 'out'
-            ? orders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onTap={(o) => navigate(`/delivery/${o.id}`, { state: { order: o } })}
-                />
-              ))
-            : orders.map((order) => (
-                <DeliveredCard key={order.id} order={order} />
-              ))
-          }
-        </div>
+        <>
+          {showProfit && <ProfitSummaryBanner orders={orders} />}
+          <div className="flex flex-col gap-3">
+            {tab === 'out'
+              ? orders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    showProfit={showProfit}
+                    onTap={(o) => navigate(`/delivery/${o.id}`, { state: { order: o } })}
+                  />
+                ))
+              : orders.map((order) => (
+                  <DeliveredCard key={order.id} order={order} showProfit={showProfit} />
+                ))
+            }
+          </div>
+        </>
       )}
     </div>
   )

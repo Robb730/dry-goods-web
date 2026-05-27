@@ -17,15 +17,18 @@ const pageTitles = {
   '/customers':  'Customers',
 }
 
-// Detail pages that manage their own scroll / layout
-const DETAIL_ROUTES = ['/delivery/', '/preparing/', '/customers/', '/customers']
+// Only sub-routes (e.g. /delivery/123, /preparing/456) get the detail layout.
+// The list pages themselves (/delivery, /preparing, /customers) use normal scroll layout.
+const DETAIL_PREFIXES = ['/delivery/', '/preparing/', '/customers/']
 
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const isDetailPage = DETAIL_ROUTES.some(
-    (prefix) => location.pathname.startsWith(prefix) && location.pathname !== prefix.slice(0, -1)
+  // A route is a "detail page" only when its path starts with one of the prefixes
+  // AND has additional segments after the slash (i.e. it's not the list page itself).
+  const isDetailPage = DETAIL_PREFIXES.some((prefix) =>
+    location.pathname.startsWith(prefix) && location.pathname.length > prefix.length
   )
 
   const pageTitle = pageTitles[location.pathname] ?? "Abella's Dry Goods"
@@ -73,11 +76,11 @@ export default function Layout() {
       </header>
 
       {/* Page content
-          - List pages: normal scrollable main with padding
-          - Detail pages: no padding, no overflow — they manage their own scroll */}
+          - List pages: normal scrollable main with padding + bottom pb so content clears the fixed nav
+          - Detail pages: no padding, no overflow — they manage their own internal scroll */}
       <main
         className={isDetailPage
-          ? 'flex-1 overflow-hidden flex flex-col'
+          ? 'flex-1 overflow-hidden flex flex-col pb-[66px]'
           : 'flex-1 overflow-y-auto pb-24 px-4 pt-4'
         }
       >
