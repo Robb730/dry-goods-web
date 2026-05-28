@@ -361,25 +361,24 @@ export default function DeliveryDetail() {
   function setQty(itemId, val) { setQtys((prev) => ({ ...prev, [itemId]: val })); }
 
   async function handleConfirm() {
-    setSubmitting(true); setError(null);
-    try {
-      for (const item of items) {
-        const delivering = checkedIds.has(item.id);
-        await supabase.from("order_items").update({
-          fulfilled_quantity_dozen: delivering ? (qtys[item.id] ?? item.quantity_dozen) : 0,
-        }).eq("id", item.id);
-      }
-      const updatePayload = { status: "delivered", order_total: finalTotal, delivered_at: new Date().toISOString() };
-// if (totalProfit != null) updatePayload.profit = totalProfit;
-      // if (totalProfit != null) updatePayload.profit = totalProfit;
-      await supabase.from("orders").update(updatePayload).eq("id", id);
-      navigate("/delivery", { replace: true });
-    } catch (e) {
-      console.error(e);
-      setError("Failed to save: " + (e?.message ?? "Unknown error"));
-      setSubmitting(false); setShowConfirm(false);
+  setSubmitting(true); setError(null);
+  try {
+    for (const item of items) {
+      const delivering = checkedIds.has(item.id);
+      await supabase.from("order_items").update({
+        fulfilled: delivering,                                              // ← add this
+        fulfilled_quantity_dozen: delivering ? (qtys[item.id] ?? item.quantity_dozen) : 0,
+      }).eq("id", item.id);
     }
+    const updatePayload = { status: "delivered", order_total: finalTotal, delivered_at: new Date().toISOString() };
+    await supabase.from("orders").update(updatePayload).eq("id", id);
+    navigate("/delivery", { replace: true });
+  } catch (e) {
+    console.error(e);
+    setError("Failed to save: " + (e?.message ?? "Unknown error"));
+    setSubmitting(false); setShowConfirm(false);
   }
+}
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
