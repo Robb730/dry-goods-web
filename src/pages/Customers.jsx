@@ -10,9 +10,6 @@ _link.href = 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700
 document.head.appendChild(_link)
 
 // ── Persisted UI state ─────────────────────────────────────────────────────────
-// Lives outside the component (module scope) so it survives unmount/remount.
-// Only ever restored when we know we're coming BACK from a customer detail page —
-// controlled by the `cameFromDetail` flag, set right before navigating away.
 const listState = {
   search: '',
   locFilter: 'All',
@@ -43,11 +40,11 @@ function SkeletonRow() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
-      padding: '12px 16px',
+      padding: '14px 16px',
       borderBottom: '1px solid #f1f5f9',
       animation: 'pulse 1.4s ease-in-out infinite',
     }}>
-      <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', flexShrink: 0 }} />
+      <div style={{ width: 42, height: 42, borderRadius: 13, background: '#f1f5f9', flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <div style={{ height: 12, borderRadius: 6, background: '#f1f5f9', width: '45%', marginBottom: 8 }} />
         <div style={{ height: 10, borderRadius: 6, background: '#f1f5f9', width: '28%' }} />
@@ -64,14 +61,12 @@ export default function Customers() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
 
-  // Only seed from persisted state if we're actually returning from a detail page.
-  // Otherwise start fresh (top of list, no filters, empty search).
   const shouldRestore = listState.cameFromDetail
   const [search, setSearch]       = useState(shouldRestore ? listState.search : '')
   const [locFilter, setLocFilter] = useState(shouldRestore ? listState.locFilter : 'All')
 
   const scrollContainerRef = useRef(null)
-  const restoredRef = useRef(false) // guards against restoring more than once per mount
+  const restoredRef = useRef(false)
 
   useEffect(() => {
     async function load() {
@@ -87,20 +82,13 @@ export default function Customers() {
     load()
   }, [])
 
-  // Consume the flag immediately after reading it, so a later plain re-render
-  // (e.g. leaving via the bottom nav to Orders, then coming back to Customers)
-  // doesn't accidentally restore again.
   useEffect(() => {
     listState.cameFromDetail = false
   }, [])
 
-  // Keep the store in sync as the user types/filters, so if they tap a customer
-  // right now, the next "back" restores this exact state.
   useEffect(() => { listState.search = search }, [search])
   useEffect(() => { listState.locFilter = locFilter }, [locFilter])
 
-  // Restore scroll position once rows have actually rendered (after loading finishes),
-  // but only when we determined on mount that we're returning from a detail page.
   useLayoutEffect(() => {
     if (!loading && shouldRestore && !restoredRef.current && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = listState.scrollTop
@@ -108,14 +96,11 @@ export default function Customers() {
     }
   }, [loading, shouldRestore])
 
-  // Track scroll position continuously so it's always current when the user navigates away.
   function handleScroll(e) {
     listState.scrollTop = e.currentTarget.scrollTop
   }
 
   function goToCustomer(c) {
-    // Snapshot everything right before leaving, and flag that the next Customers
-    // mount should restore it.
     listState.search = search
     listState.locFilter = locFilter
     listState.scrollTop = scrollContainerRef.current?.scrollTop ?? 0
@@ -128,8 +113,6 @@ export default function Customers() {
     return ['All', ...LOCATIONS.slice(1), ...fromData.filter(l => !LOCATIONS.includes(l))]
   }, [customers])
 
-  // Customers matching the active location filter (independent of search text) —
-  // used to drive the summary strip.
   const locationScoped = useMemo(() =>
     locFilter === 'All' ? customers : customers.filter(c => c.location === locFilter),
     [customers, locFilter])
@@ -146,124 +129,134 @@ export default function Customers() {
   const F = "'Sora', sans-serif"
 
   return (
+    // NOTE: the parent <main> in Layout.jsx already provides the scrollable
+    // area and safe-area-aware bottom padding, so this component just fills
+    // it — no need for its own height math or extra bottom padding.
     <div style={{
-      fontFamily: F, display: 'flex', flexDirection: 'column', height: '100%',
+      fontFamily: F, display: 'flex', flexDirection: 'column',
       width: '100%', maxWidth: 640, margin: '0 auto',
-      padding: '16px 16px 0', overflow: 'hidden', paddingBottom: 96,
-      boxSizing: 'border-box',
+      boxSizing: 'border-box', minHeight: '100%',
     }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         .cust-row:active { background: #f8fafc !important; }
-        .loc-btn:active { opacity: 0.75; }
+        .loc-btn:active { opacity: 0.7; transform: scale(0.97); }
         .cust-scroll::-webkit-scrollbar { width: 4px; }
         .cust-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
         .cust-scroll::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
-      {/* ── Summary strip ── */}
+      {/* ── Summary card ── */}
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1px 1fr',
-        background: '#fff',
-        borderRadius: 18,
-        border: '1px solid #f0f0f0',
+        display: 'flex',
+        background: 'linear-gradient(135deg, #0f172a, #1e293b)',
+        borderRadius: 20,
         marginBottom: 14,
         overflow: 'hidden',
         flexShrink: 0,
+        boxShadow: '0 6px 20px rgba(15, 23, 42, 0.18)',
       }}>
-        <div style={{ padding: '14px 18px' }}>
-          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase', margin: '0 0 4px' }}>
+        <div style={{ flex: 1, padding: '16px 18px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 5px' }}>
             {locFilter === 'All' ? 'Customers' : locFilter}
           </p>
-          <p style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
+          <p style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
             {summaryCount}
           </p>
         </div>
-        <div style={{ background: '#f1f5f9' }} />
-        <div style={{ padding: '14px 18px' }}>
-          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase', margin: '0 0 4px' }}>
+        <div style={{ flex: 1, padding: '16px 18px' }}>
+          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 5px' }}>
             Outstanding
           </p>
           <p style={{
             fontSize: 22, fontWeight: 800, letterSpacing: '-0.04em', margin: 0, lineHeight: 1,
-            color: summaryOwed > 0 ? '#dc2626' : '#16a34a',
+            color: summaryOwed > 0 ? '#f87171' : '#4ade80',
           }}>
             {formatPeso(summaryOwed)}
           </p>
         </div>
       </div>
 
-      {/* ── Search ── */}
-      <div style={{ position: 'relative', marginBottom: 10, flexShrink: 0 }}>
-        <Search size={14} strokeWidth={2.5} style={{
-          position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none',
-        }} />
-        <input
-          type="text"
-          placeholder="Search customers…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            paddingLeft: 36, paddingRight: search ? 36 : 14,
-            paddingTop: 10, paddingBottom: 10,
-            borderRadius: 13,
-            border: '1.5px solid #e8edf2',
-            background: '#fff',
-            fontSize: 13, fontWeight: 500, fontFamily: F,
-            color: '#0f172a',
-            outline: 'none',
-          }}
-        />
-        {search && (
-          <button
-            onClick={() => setSearch('')}
-            style={{
-              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-              background: '#f1f5f9', border: 'none', borderRadius: '50%',
-              width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', padding: 0,
-            }}
-          >
-            <X size={11} strokeWidth={2.5} color="#64748b" />
-          </button>
-        )}
-      </div>
-
-      {/* ── Location filter ── */}
+      {/* ── Sticky search + filter ── */}
       <div style={{
-        display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4,
-        marginBottom: 12, flexShrink: 0,
-        WebkitOverflowScrolling: 'touch',
+        position: 'sticky', top: 0, zIndex: 10,
+        background: '#f0f4ff', paddingBottom: 10, marginBottom: 2,
       }}>
-        {locations.map(loc => {
-          const isActive = locFilter === loc
-          return (
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <Search size={14} strokeWidth={2.5} style={{
+            position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none',
+          }} />
+          <input
+            type="text"
+            inputMode="search"
+            placeholder="Search customers…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              paddingLeft: 36, paddingRight: search ? 36 : 14,
+              paddingTop: 11, paddingBottom: 11,
+              borderRadius: 14,
+              border: '1.5px solid #e8edf2',
+              background: '#fff',
+              fontSize: 14, fontWeight: 500, fontFamily: F,
+              color: '#0f172a',
+              outline: 'none',
+              WebkitAppearance: 'none',
+            }}
+          />
+          {search && (
             <button
-              key={loc}
-              className="loc-btn"
-              onClick={() => setLocFilter(loc)}
+              onClick={() => setSearch('')}
               style={{
-                flexShrink: 0,
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '6px 13px',
-                borderRadius: 99,
-                border: isActive ? 'none' : '1.5px solid #e8edf2',
-                background: isActive ? '#0f172a' : '#fff',
-                color: isActive ? '#fff' : '#64748b',
-                fontSize: 12, fontWeight: 600, fontFamily: F,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                whiteSpace: 'nowrap',
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', padding: 0,
               }}
             >
-              {loc !== 'All' && (
-                <MapPin size={10} strokeWidth={2.5} style={{ opacity: 0.7 }} />
-              )}
-              {loc}
+              <X size={11} strokeWidth={2.5} color="#64748b" />
             </button>
-          )
-        })}
+          )}
+        </div>
+
+        {/* Location filter */}
+        <div style={{
+          display: 'flex', gap: 6, overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+        }}>
+          {locations.map(loc => {
+            const isActive = locFilter === loc
+            return (
+              <button
+                key={loc}
+                className="loc-btn"
+                onClick={() => setLocFilter(loc)}
+                style={{
+                  flexShrink: 0,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '7px 14px',
+                  borderRadius: 99,
+                  border: isActive ? 'none' : '1.5px solid #e8edf2',
+                  background: isActive ? '#0f172a' : '#fff',
+                  color: isActive ? '#fff' : '#64748b',
+                  fontSize: 12.5, fontWeight: 600, fontFamily: F,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {loc !== 'All' && (
+                  <MapPin size={10} strokeWidth={2.5} style={{ opacity: 0.7 }} />
+                )}
+                {loc}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Error ── */}
@@ -278,26 +271,21 @@ export default function Customers() {
         </div>
       )}
 
-      {/* ── Scrollable list container ── */}
+      {/* ── List ── */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="cust-scroll"
         style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
           background: '#fff',
           borderRadius: 20,
           border: '1px solid #eef1f5',
           boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)',
-          WebkitOverflowScrolling: 'touch',
+          overflow: 'hidden',
         }}
       >
-        {/* Loading */}
         {loading && [...Array(7)].map((_, i) => <SkeletonRow key={i} />)}
 
-        {/* Empty */}
         {!loading && filtered.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 20px' }}>
             <User size={28} strokeWidth={1.5} color="#cbd5e1" style={{ marginBottom: 10 }} />
@@ -305,7 +293,6 @@ export default function Customers() {
           </div>
         )}
 
-        {/* Rows */}
         {!loading && filtered.map((c, i) => {
           const lvl = getLevelStyle(c.price_level)
           const bal = Number(c.remaining_balance ?? 0)
@@ -319,26 +306,25 @@ export default function Customers() {
               onClick={() => goToCustomer(c)}
               style={{
                 width: '100%', textAlign: 'left', boxSizing: 'border-box',
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 11,
+                padding: '13px 14px',
                 background: 'transparent',
                 border: 'none',
                 borderBottom: isLast ? 'none' : '1px solid #f8fafc',
                 cursor: 'pointer',
                 fontFamily: F,
+                WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Avatar */}
               <div style={{
-                width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                width: 40, height: 40, borderRadius: 13, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: lvl.bg,
-                fontSize: 14, fontWeight: 700, color: lvl.color,
+                fontSize: 15, fontWeight: 700, color: lvl.color,
               }}>
                 {initial}
               </div>
 
-              {/* Name + meta */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
                   margin: '0 0 3px', fontSize: 13.5, fontWeight: 600,
@@ -363,7 +349,6 @@ export default function Customers() {
                 </div>
               </div>
 
-              {/* Balance */}
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <p style={{
                   margin: '0 0 2px', fontSize: 13, fontWeight: 700,
