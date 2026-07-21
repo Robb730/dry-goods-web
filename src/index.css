@@ -31,3 +31,14 @@ main {
 * {
   scrollbar-width: none;
 }
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+}
+#root {
+  height: 100%;
+  overflow: hidden;
+}

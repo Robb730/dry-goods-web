@@ -200,7 +200,7 @@ export default function Customers() {
               borderRadius: 14,
               border: '1.5px solid #e8edf2',
               background: '#fff',
-              fontSize: 14, fontWeight: 500, fontFamily: F,
+              fontSize: 16, fontWeight: 500, fontFamily: F,
               color: '#0f172a',
               outline: 'none',
               WebkitAppearance: 'none',
