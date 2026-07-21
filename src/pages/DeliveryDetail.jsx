@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import {
   ChevronLeft, Minus, Plus, AlertTriangle, CheckCircle2, Package,
   MapPin, Hash, Clock, CheckSquare, Square, TrendingUp, TrendingDown,
-  Filter, Eye, EyeOff,
+  Filter, Eye, EyeOff, ListChecks,
 } from "lucide-react";
 
 function formatPeso(n) {
@@ -355,10 +355,28 @@ export default function DeliveryDetail() {
   const filteredChecked = filteredItems.filter((i) => checkedIds.has(i.id)).length;
   const filteredUnchecked = filteredItems.length - filteredChecked;
 
+  // "Check All" acts on whatever's currently visible (respects the active category
+  // filter) — this is the intuitive scope: check/uncheck what you're looking at.
+  const filteredAllChecked = filteredItems.length > 0 && filteredUnchecked === 0;
+
   function toggleItem(itemId) {
     setCheckedIds((prev) => { const next = new Set(prev); next.has(itemId) ? next.delete(itemId) : next.add(itemId); return next; });
   }
   function setQty(itemId, val) { setQtys((prev) => ({ ...prev, [itemId]: val })); }
+
+  function toggleCheckAll() {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (filteredAllChecked) {
+        // Everything currently visible is checked → uncheck just those
+        filteredItems.forEach((i) => next.delete(i.id));
+      } else {
+        // Otherwise check everything currently visible
+        filteredItems.forEach((i) => next.add(i.id));
+      }
+      return next;
+    });
+  }
 
   async function handleConfirm() {
   setSubmitting(true); setError(null);
@@ -491,11 +509,30 @@ export default function DeliveryDetail() {
               background: allChecked ? "linear-gradient(90deg, #16a34a, #22c55e)" : "linear-gradient(90deg, #f97316, #fb923c)",
             }} />
         </div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-slate-400">{activeItems.length}/{items.length} confirmed</span>
-          {allChecked
-            ? <span className="text-xs text-green-600 font-semibold">All confirmed ✓</span>
-            : <span className="text-xs text-orange-500 font-medium">{uncheckedCount} remaining</span>}
+        <div className="flex justify-between items-center mb-2 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-slate-400 whitespace-nowrap">{activeItems.length}/{items.length} confirmed</span>
+            {allChecked
+              ? <span className="text-xs text-green-600 font-semibold whitespace-nowrap">All confirmed ✓</span>
+              : <span className="text-xs text-orange-500 font-medium whitespace-nowrap">{uncheckedCount} remaining</span>}
+          </div>
+          {/* Check All / Uncheck All — scoped to whatever the active category filter shows */}
+          {filteredItems.length > 0 && (
+            <button
+              onClick={toggleCheckAll}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+              style={
+                filteredAllChecked
+                  ? { background: "#f1f5f9", color: "#64748b", border: "1.5px solid #e2e8f0" }
+                  : { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", border: "1.5px solid transparent" }
+              }
+            >
+              <ListChecks size={13} strokeWidth={2.5} />
+              {filteredAllChecked
+                ? (activeCategory === "All" ? "Uncheck All" : `Uncheck ${activeCategory}`)
+                : (activeCategory === "All" ? "Check All" : `Check ${activeCategory}`)}
+            </button>
+          )}
         </div>
 
         {/* Category filter tabs */}
