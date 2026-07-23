@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { ClipboardList, Package, Truck, Users, LogOut, ShoppingBag } from 'lucide-react'
@@ -19,12 +20,43 @@ const pageTitles = {
 
 const DETAIL_PREFIXES = ['/delivery/', '/preparing/', '/customers/']
 
-// Actual on-screen height of the nav bar content (before safe-area is added).
-const NAV_HEIGHT = 60
+/*
+ * Z-INDEX MAP (keep this in sync with any modal/overlay added in child pages)
+ *   nav (this file)........... 40
+ *   page-level modals.......... 50  (PaymentModal, ConfirmModal, etc.)
+ *   toasts / global alerts..... 60
+ *
+ * The bottom nav MUST stay below anything the page itself renders as an
+ * overlay, or its buttons get visually clipped/unclickable on small screens.
+ * Previously both were z-50, and because <nav> comes after <Outlet/> in the
+ * DOM, it silently won every stacking tie and covered modal buttons.
+ */
+const Z_NAV = 40
 
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const navRef = useRef(null)
+
+  // Measure the nav bar's real rendered height instead of guessing a fixed
+  // number. This keeps content padding correct across devices, font-size
+  // accessibility settings, and safe-area insets — and it self-corrects if
+  // the nav's content ever changes (longer labels, larger icons, etc.).
+  const [navHeight, setNavHeight] = useState(60)
+
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const measure = () => setNavHeight(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    window.addEventListener('orientationchange', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('orientationchange', measure)
+    }
+  }, [])
 
   const isDetailPage = DETAIL_PREFIXES.some((prefix) =>
     location.pathname.startsWith(prefix) && location.pathname.length > prefix.length
@@ -47,6 +79,10 @@ export default function Layout() {
         height: '100dvh',
         background: '#f0f4ff',
         fontFamily: "'DM Sans', sans-serif",
+        // Exposed so ANY child page can reserve exactly enough space for the
+        // nav without hardcoding a pixel guess of its own. Use it like:
+        //   paddingBottom: 'var(--bottom-nav-space)'
+        '--bottom-nav-space': `calc(${navHeight}px + env(safe-area-inset-bottom))`,
       }}
     >
       {/* Top bar */}
@@ -91,14 +127,17 @@ export default function Layout() {
       {/* Page content */}
       <main
         className={isDetailPage
-          ? 'flex-1 overflow-hidden flex flex-col'
-          : 'flex-1 overflow-y-auto px-4 pt-4'
+          ? 'flex-1 overflow-hidden flex flex-col min-h-0'
+          : 'flex-1 overflow-y-auto px-4 pt-4 min-h-0'
         }
         style={{
-          // Bottom padding = nav height + safe-area inset, so content never
-          // hides behind the fixed nav or the home-indicator gap.
-          paddingBottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
           WebkitOverflowScrolling: 'touch',
+          // For scrollable (list-style) pages we reserve real space so the
+          // last item/button in the list is never hidden behind the nav.
+          // Detail pages manage their own internal layout/scrolling and
+          // just need to know the nav's footprint (see --bottom-nav-space),
+          // so they aren't force-padded here.
+          paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
         }}
       >
         <Outlet />
@@ -106,15 +145,17 @@ export default function Layout() {
 
       {/* Bottom nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50"
+        ref={navRef}
+        className="shrink-0 bg-white border-t border-slate-100"
         style={{
+          zIndex: Z_NAV,
           boxShadow: '0 -4px 24px rgba(37,99,235,0.07)',
           // Extend the bar's own background into the safe area instead of
           // leaving a white/transparent gap under the home-indicator.
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <div className="flex" style={{ height: NAV_HEIGHT }}>
+        <div className="flex" style={{ height: 60 }}>
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
