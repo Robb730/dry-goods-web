@@ -393,22 +393,18 @@ const allActedOn = neutralCount === 0;
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col h-full"
       style={{
         fontFamily: "'DM Sans', sans-serif",
-        background: "transparent",
+        background: "#f0f4ff",
       }}
     >
-      {/* Header — sticky under Layout header */}
+      {/* Header — never scrolls */}
       <div
-        className="sticky top-0 z-10"
         style={{
           flexShrink: 0,
-          padding: "12px 16px 8px",
+          padding: "16px 16px 8px",
           background: "#f0f4ff",
-          borderBottom: "1px solid #e8edf0",
-          marginBottom: 4,
-          borderRadius: 16,
         }}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -481,9 +477,9 @@ const allActedOn = neutralCount === 0;
         )}
       </div>
 
-      {/* Items — part of main scroll, not nested */}
+      {/* Scrollable items panel */}
       <div
-        style={{ padding: "8px 16px 12px" }}
+        style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 16px" }}
       >
         {loading && (
           <div className="flex flex-col gap-3 pt-2">
@@ -522,20 +518,15 @@ const allActedOn = neutralCount === 0;
         )}
       </div>
 
-      {/* Bottom bar — sticky above bottom nav */}
+      {/* Bottom bar — always visible */}
       {!loading && !error && (
         <div
-          className="sticky z-10"
           style={{
             flexShrink: 0,
-            bottom: 0,
-            marginTop: 8,
-            padding: "12px 16px",
-            paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+            padding: "12px 16px 16px",
             background: "white",
             borderTop: "1px solid #e2e8f0",
             boxShadow: "0 -4px 16px rgba(15,23,42,0.06)",
-            borderRadius: 16,
           }}
         >
           <div className="flex items-center justify-between mb-2 px-1">

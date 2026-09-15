@@ -255,7 +255,17 @@ export default function CustomerDetail() {
   const [paying, setPaying] = useState(false)
   const [showStats, setShowStats] = useState(false)
 
+  const scrollRef = useRef(null)
+  const bottomRef = useRef(null)
+
   useEffect(() => { load() }, [id])
+
+  useEffect(() => {
+    if (!loading && bottomRef.current) {
+      const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+      if (isMobile) bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' })
+    }
+  }, [loading])
 
   async function load() {
     setLoading(true); setError(null)
@@ -392,23 +402,21 @@ export default function CustomerDetail() {
   const lastEntry = withBalances[withBalances.length - 1]
 
   return (
-    <div style={{ fontFamily: F, background: 'transparent', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased', paddingBottom: 12 }}>
+    <div style={{ fontFamily: F, background: '#f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         .no-scrollbar::-webkit-scrollbar { display: none }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* ── Sticky top bar — stays under Layout header while transactions scroll ── */}
-      <div className="sticky top-0" style={{
+      {/* ── Fixed top bar ── */}
+      <div style={{
         background: '#fff',
         borderBottom: '1px solid #e8edf2',
         padding: '12px 16px',
         display: 'flex', alignItems: 'center', gap: 12,
         flexShrink: 0,
         zIndex: 10,
-        marginBottom: 12,
-        borderRadius: 16,
       }}>
         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <ChevronLeft size={18} color="#0f172a" strokeWidth={2} />
@@ -538,12 +546,17 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {/* ── Transaction panel: part of main scroll — no nested scroller ── */}
+      {/* ── Transaction panel: scrollable, fills remaining height ── */}
       <div
+        ref={scrollRef}
         className="no-scrollbar"
         style={{
+          flex: 1,
+          overflowY: 'auto',
           padding: '0 14px 24px',
           maxWidth: 540, width: '100%', margin: '0 auto', boxSizing: 'border-box',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
         }}
       >
         {withBalances.length === 0 ? (
@@ -574,6 +587,8 @@ export default function CustomerDetail() {
         {error && (
           <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 12, background: '#fef2f2', border: '1px solid #fecaca', fontSize: 12, color: '#dc2626', fontWeight: 500 }}>{error}</div>
         )}
+
+        <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
       {showPayment && customer && (

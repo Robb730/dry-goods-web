@@ -207,20 +207,22 @@ export default function Layout() {
           )}
         </header>
 
-        {/* Page content — the ONLY scroll container on mobile */}
+        {/* Page content — the ONLY scroll container on mobile, detail pages handle their own */}
         <main
           id="app-main-scroll"
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 md:px-6 pt-4"
+          className={isDetailPage
+            ? 'flex-1 overflow-hidden flex flex-col min-h-0'
+            : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 md:px-6 pt-4'}
           style={{
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
             overscrollBehaviorY: 'contain',
             touchAction: 'pan-y',
-            paddingBottom: 'var(--bottom-nav-space)',
+            paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
             transform: 'translateZ(0)',
           }}
         >
-          <div className="container-app pb-2">
+          <div className={isDetailPage ? 'flex-1 min-h-0 flex flex-col' : 'container-app pb-2'}>
             <Outlet />
           </div>
         </main>
