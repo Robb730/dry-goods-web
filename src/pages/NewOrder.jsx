@@ -566,11 +566,14 @@ export default function NewOrder() {
         <>
           <ItemPicker customer={customer} cartItems={cartItems} onCartChange={setCartItems} />
 
-          {/* Fixed "Review Order" bar — always visible above Layout's bottom nav */}
-          <div style={{ position: 'fixed', bottom: 64, left: 0, right: 0, padding: '10px 16px 12px', background: 'linear-gradient(to top, white 80%, transparent)', zIndex: 40 }}>
+          {/* Fixed "Review Order" bar — safe-area aware, responsive width */}
+          <div
+            className="fixed left-0 right-0 md:left-[240px] flex justify-center"
+            style={{ bottom: 'var(--bottom-nav-space, 76px)', padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', background: 'linear-gradient(to top, white 88%, transparent)', zIndex: 40 }}
+          >
             <button onClick={goNext} disabled={!canNext}
-              className="w-full rounded-2xl py-3.5 font-black flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100"
-              style={{ background: canNext ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : '#e2e8f0', color: canNext ? 'white' : '#94a3b8', fontSize: '14px', letterSpacing: '-0.01em', boxShadow: canNext ? '0 4px 20px rgba(37,99,235,0.4)' : 'none' }}>
+              className="w-full max-w-[640px] rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100"
+              style={{ minHeight: 48, background: canNext ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : '#e2e8f0', color: canNext ? 'white' : '#94a3b8', fontSize: '14px', letterSpacing: '-0.01em', boxShadow: canNext ? '0 4px 20px rgba(37,99,235,0.4)' : 'none' }}>
               Review Order <ArrowRight size={15} strokeWidth={2.5} />
             </button>
           </div>

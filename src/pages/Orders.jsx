@@ -493,7 +493,7 @@ export default function Orders() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5 pb-28">
+        <div className="grid gap-2.5 pb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
           {filtered.map(order => (
             <OrderCard
   key={order.id}
@@ -505,11 +505,15 @@ onView={o => setViewing(o)}  // ← add this
         </div>
       )}
 
-      {/* FAB */}
+      {/* FAB — respects safe area and bottom nav */}
       <button
         onClick={() => navigate('/orders/new')}
-        className="fixed bottom-20 right-4 flex items-center gap-2 rounded-2xl px-4 py-3 active:scale-95 transition-transform duration-100"
+        className="fixed right-4 md:right-6 flex items-center gap-2 rounded-2xl px-4 active:scale-95 transition-transform duration-100"
         style={{
+          bottom: 'calc(var(--bottom-nav-space, 76px) + 12px)',
+          paddingTop: 12,
+          paddingBottom: 12,
+          minHeight: 44,
           background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
           boxShadow: '0 4px 20px rgba(37,99,235,0.45)',
           color: 'white',

@@ -235,9 +235,9 @@ export default function OutForDelivery() {
   const hasAnyProfit = orders.some((o) => o.computed_profit != null)
 
   return (
-    <div>
+    <div className="w-full max-w-3xl mx-auto">
       {/* Tabs + controls row */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100">
           <button
             onClick={() => setTab('out')}
@@ -349,7 +349,7 @@ export default function OutForDelivery() {
       {!loading && !error && orders.length > 0 && (
         <>
           {showProfit && <ProfitSummaryBanner orders={orders} />}
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
             {tab === 'out'
               ? orders.map((order) => (
                   <OrderCard

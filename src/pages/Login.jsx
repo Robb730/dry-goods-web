@@ -24,19 +24,18 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6">
+    <div className="bg-slate-50 flex flex-col items-center justify-center px-6 py-8" style={{ minHeight: '100dvh', paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
 
-      {/* Brand */}
-      <div className="mb-10 flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-200">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <path d="M16 10a4 4 0 0 1-8 0"/>
+      {/* Brand — t-shirt mark */}
+      <div className="mb-8 md:mb-10 flex flex-col items-center gap-3">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md shadow-blue-200" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
+          <svg width="36" height="36" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+            <path d="M32 28 L22 34 L28.5 44 L34 40 L34 74.5 Q34 77 36.5 77 L63.5 77 Q66 77 66 74.5 L66 40 L71.5 44 L78 34 L68 28 C66.5 28 64.8 26.5 63 22 L57 22 C55.5 26.5 53 29.2 50 29.2 C47 29.2 44.5 26.5 43 22 L37 22 C35.2 26.5 33.5 28 32 28 Z" fill="white"/>
+            <path d="M43 22 Q50 29 57 22" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="3" strokeLinecap="round"/>
           </svg>
         </div>
         <div className="text-center">
-          <h1 className="text-slate-800 text-2xl font-bold tracking-tight">Dry Goods</h1>
+          <h1 className="text-slate-800 text-2xl md:text-3xl font-bold tracking-tight">Abella's Dry Goods</h1>
           <p className="text-slate-400 text-sm mt-0.5">Order Management</p>
         </div>
       </div>

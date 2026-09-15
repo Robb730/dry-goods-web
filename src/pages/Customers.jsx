@@ -65,8 +65,13 @@ export default function Customers() {
   const [search, setSearch]       = useState(shouldRestore ? listState.search : '')
   const [locFilter, setLocFilter] = useState(shouldRestore ? listState.locFilter : 'All')
 
-  const scrollContainerRef = useRef(null)
   const restoredRef = useRef(false)
+
+  // Scroll is owned by Layout's <main id="app-main-scroll"> — not an inner div.
+  // We persist/restore that element's scrollTop so mobile back-navigation feels instant.
+  function getMainEl() {
+    return document.getElementById('app-main-scroll')
+  }
 
   useEffect(() => {
     async function load() {
@@ -89,21 +94,34 @@ export default function Customers() {
   useEffect(() => { listState.search = search }, [search])
   useEffect(() => { listState.locFilter = locFilter }, [locFilter])
 
+  useEffect(() => {
+    const mainEl = getMainEl()
+    if (!mainEl) return
+    function onScroll() {
+      listState.scrollTop = mainEl.scrollTop
+    }
+    mainEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => mainEl.removeEventListener('scroll', onScroll)
+  }, [])
+
   useLayoutEffect(() => {
-    if (!loading && shouldRestore && !restoredRef.current && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = listState.scrollTop
+    if (!loading && shouldRestore && !restoredRef.current) {
+      const mainEl = getMainEl()
+      if (mainEl) {
+        // defer one frame so main has finished layout after data load
+        requestAnimationFrame(() => {
+          mainEl.scrollTop = listState.scrollTop
+        })
+      }
       restoredRef.current = true
     }
   }, [loading, shouldRestore])
 
-  function handleScroll(e) {
-    listState.scrollTop = e.currentTarget.scrollTop
-  }
-
   function goToCustomer(c) {
+    const mainEl = getMainEl()
     listState.search = search
     listState.locFilter = locFilter
-    listState.scrollTop = scrollContainerRef.current?.scrollTop ?? 0
+    listState.scrollTop = mainEl?.scrollTop ?? 0
     listState.cameFromDetail = true
     navigate(`/customers/${c.id}`, { state: { customer: c } })
   }
@@ -129,21 +147,17 @@ export default function Customers() {
   const F = "'Sora', sans-serif"
 
   return (
-    // NOTE: the parent <main> in Layout.jsx already provides the scrollable
-    // area and safe-area-aware bottom padding, so this component just fills
-    // it — no need for its own height math or extra bottom padding.
     <div style={{
       fontFamily: F, display: 'flex', flexDirection: 'column',
       width: '100%', maxWidth: 640, margin: '0 auto',
-      boxSizing: 'border-box', minHeight: '100%',
+      boxSizing: 'border-box',
     }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         .cust-row:active { background: #f8fafc !important; }
         .loc-btn:active { opacity: 0.7; transform: scale(0.97); }
-        .cust-scroll::-webkit-scrollbar { width: 4px; }
-        .cust-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
-        .cust-scroll::-webkit-scrollbar-track { background: transparent; }
+        /* sticky search must paint over scrolled list */
+        .cust-sticky { position: sticky; top: 0; z-index: 10; background: #f0f4ff; }
       `}</style>
 
       {/* ── Summary card ── */}
@@ -178,9 +192,9 @@ export default function Customers() {
       </div>
 
       {/* ── Sticky search + filter ── */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 10,
-        background: '#f0f4ff', paddingBottom: 10, marginBottom: 2,
+      <div className="cust-sticky -mx-4 md:-mx-6 px-4 md:px-6" style={{
+        paddingBottom: 10, marginBottom: 2,
+        paddingTop: 8,
       }}>
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: 10 }}>
@@ -273,9 +287,6 @@ export default function Customers() {
 
       {/* ── List ── */}
       <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="cust-scroll"
         style={{
           background: '#fff',
           borderRadius: 20,

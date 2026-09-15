@@ -6,39 +6,109 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  background: #f0f4ff;
+  scrollbar-width: none;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
   background: #f0f4ff;
   color: #1e293b;
   font-family: 'DM Sans', sans-serif;
-  overscroll-behavior: none;
+  margin: 0;
+  min-height: 100dvh;
+  min-height: 100vh;
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* allow natural scroll; app-shell handles internal scrolling */
+}
+
+#root {
+  min-height: 100dvh;
+  min-height: 100vh;
+  isolation: isolate;
 }
 
 /* Smooth scrolling in main content */
 main {
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-/* iOS safe area for bottom nav */
+/* iOS safe areas */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.px-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
 
-/* Hide scrollbar but keep scrolling */
+/* Prevent iOS zoom on focus: enforce 16px on small viewports */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch targets: ensure interactive elements meet 44px */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* Hide scrollbar but keep scrolling where needed */
 ::-webkit-scrollbar {
   display: none;
 }
-
 * {
   scrollbar-width: none;
 }
-html, body {
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  position: fixed;
-  width: 100%;
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
-#root {
-  height: 100%;
-  overflow: hidden;
+
+/* PWA standalone: no bounce */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* allow selection in inputs */
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
+
+/* Content container helper */
+.container-app {
+  width: 100%;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (min-width: 768px) {
+  .container-app {
+    max-width: 720px;
+  }
+}
+@media (min-width: 1024px) {
+  .container-app {
+    max-width: 960px;
+  }
 }

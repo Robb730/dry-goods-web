@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ClipboardList, Package, Truck, Users, LogOut, ShoppingBag } from 'lucide-react'
+import { ClipboardList, Package, Truck, Users, LogOut } from 'lucide-react'
+
+function TShirtMark({ size = 15, color = 'white' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <path d="M32 28 L22 34 L28.5 44 L34 40 L34 74.5 Q34 77 36.5 77 L63.5 77 Q66 77 66 74.5 L66 40 L71.5 44 L78 34 L68 28 C66.5 28 64.8 26.5 63 22 L57 22 C55.5 26.5 53 29.2 50 29.2 C47 29.2 44.5 26.5 43 22 L37 22 C35.2 26.5 33.5 28 32 28 Z" fill={color} />
+      <path d="M43 22 Q50 29 57 22" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 const links = [
   { to: '/orders',    label: 'Orders',    icon: ClipboardList },
@@ -71,125 +80,165 @@ export default function Layout() {
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col md:flex-row overflow-hidden"
       style={{
-        // 100dvh instead of 100vh/h-screen: iOS Safari (and the standalone
-        // home-screen app) resizes the visual viewport as browser chrome
-        // shows/hides, and vh doesn't track that — dvh does.
         height: '100dvh',
         background: '#f0f4ff',
         fontFamily: "'DM Sans', sans-serif",
-        // Exposed so ANY child page can reserve exactly enough space for the
-        // nav without hardcoding a pixel guess of its own. Use it like:
-        //   paddingBottom: 'var(--bottom-nav-space)'
         '--bottom-nav-space': `calc(${navHeight}px + env(safe-area-inset-bottom))`,
       }}
     >
-      {/* Top bar */}
-      <header
-        className="shrink-0 bg-white px-4 shadow-[0_1px_0_#e2e8f0]"
-        style={{
-          // Pad the status-bar / notch area on iPhones running as a home-screen app.
-          paddingTop: 'max(16px, env(safe-area-inset-top))',
-        }}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
-              <ShoppingBag size={15} color="white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-slate-800 tracking-tight"
-              style={{ fontSize: '15px', letterSpacing: '-0.01em' }}>
-              Abella's Dry Goods
-            </span>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex md:flex-col shrink-0 bg-white border-r border-slate-100" style={{ width: 240 }}>
+        <div className="flex items-center gap-2.5 px-5 shrink-0" style={{ height: 64, borderBottom: '1px solid #e2e8f0' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
+            <TShirtMark size={20} />
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-slate-400 active:scale-95 transition-all duration-150 rounded-xl px-2.5 py-1.5 active:bg-red-50"
-            style={{ fontSize: '12px', fontWeight: 500 }}
-          >
-            <LogOut size={13} strokeWidth={2.2} />
-            Logout
-          </button>
+          <div className="min-w-0">
+            <p className="font-extrabold text-slate-800 leading-none" style={{ fontSize: '14px', letterSpacing: '-0.02em' }}>Abella's</p>
+            <p className="font-semibold text-slate-400 leading-none" style={{ fontSize: '11px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Dry Goods</p>
+          </div>
         </div>
-
-        {!isDetailPage && (
-          <div className="px-0.5 pb-3">
-            <h1 className="text-slate-800 font-bold"
-              style={{ fontSize: '22px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-              {pageTitle}
-            </h1>
-          </div>
-        )}
-      </header>
-
-      {/* Page content */}
-      <main
-        className={isDetailPage
-          ? 'flex-1 overflow-hidden flex flex-col min-h-0'
-          : 'flex-1 overflow-y-auto px-4 pt-4 min-h-0'
-        }
-        style={{
-          WebkitOverflowScrolling: 'touch',
-          // For scrollable (list-style) pages we reserve real space so the
-          // last item/button in the list is never hidden behind the nav.
-          // Detail pages manage their own internal layout/scrolling and
-          // just need to know the nav's footprint (see --bottom-nav-space),
-          // so they aren't force-padded here.
-          paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
-        }}
-      >
-        <Outlet />
-      </main>
-
-      {/* Bottom nav */}
-      <nav
-        ref={navRef}
-        className="shrink-0 bg-white border-t border-slate-100"
-        style={{
-          zIndex: Z_NAV,
-          boxShadow: '0 -4px 24px rgba(37,99,235,0.07)',
-          // Extend the bar's own background into the safe area instead of
-          // leaving a white/transparent gap under the home-indicator.
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-      >
-        <div className="flex" style={{ height: 60 }}>
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/orders'}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className="flex items-center gap-3 rounded-xl px-3 transition-all"
+              style={{ minHeight: 44 }}
             >
               {({ isActive }) => (
                 <>
-                  {isActive && (
-                    <span
-                      className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
-                      style={{ width: 32, height: 3, background: 'linear-gradient(90deg, #2563eb, #60a5fa)', borderRadius: '0 0 4px 4px' }}
-                    />
-                  )}
-                  <span
-                    className="flex items-center justify-center rounded-xl transition-all duration-150"
-                    style={{
-                      width: 40, height: 32,
-                      background: isActive ? 'linear-gradient(135deg, #eff6ff, #dbeafe)' : 'transparent',
-                    }}
-                  >
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} color={isActive ? '#2563eb' : '#94a3b8'} />
+                  <span className="flex items-center justify-center rounded-lg shrink-0" style={{ width: 36, height: 36, background: isActive ? 'linear-gradient(135deg, #eff6ff, #dbeafe)' : 'transparent' }}>
+                    <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} color={isActive ? '#2563eb' : '#94a3b8'} />
                   </span>
-                  <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#2563eb' : '#94a3b8', letterSpacing: '0.01em' }}>
-                    {label}
-                  </span>
+                  <span style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? '#1e293b' : '#64748b' }}>{label}</span>
                 </>
               )}
             </NavLink>
           ))}
+        </nav>
+        <div className="p-3 shrink-0" style={{ borderTop: '1px solid #f1f5f9', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 rounded-xl px-3 active:bg-red-50 transition-colors"
+            style={{ minHeight: 44, fontSize: '13px', fontWeight: 600, color: '#94a3b8' }}
+          >
+            <LogOut size={15} strokeWidth={2.2} />
+            Logout
+          </button>
         </div>
-      </nav>
+      </aside>
+
+      {/* Main column */}
+      <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">
+        {/* Top bar */}
+        <header
+          className="shrink-0 bg-white px-4 md:px-6 shadow-[0_1px_0_#e2e8f0]"
+          style={{
+            paddingTop: 'max(12px, env(safe-area-inset-top))',
+          }}
+        >
+          <div className="flex items-center justify-between mb-3 md:mb-0 md:py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center md:hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
+                <TShirtMark size={16} />
+              </div>
+              <span className="font-bold text-slate-800 tracking-tight md:hidden" style={{ fontSize: '15px', letterSpacing: '-0.01em' }}>
+                Abella's Dry Goods
+              </span>
+              {/* Desktop: show page title inline here */}
+              <h1 className="hidden md:block text-slate-800 font-bold" style={{ fontSize: '18px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                {!isDetailPage ? pageTitle : "Abella's Dry Goods"}
+              </h1>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex md:hidden items-center gap-1.5 text-slate-400 active:scale-95 transition-all duration-150 rounded-xl px-2.5 py-1.5 active:bg-red-50"
+              style={{ fontSize: '12px', fontWeight: 500, minHeight: 32 }}
+            >
+              <LogOut size={13} strokeWidth={2.2} />
+              Logout
+            </button>
+            {/* Desktop secondary title / detail crumb */}
+            <span className="hidden md:block text-slate-400" style={{ fontSize: '12px', fontWeight: 500 }}>
+              {isDetailPage ? pageTitle : ''}
+            </span>
+          </div>
+
+          {!isDetailPage && (
+            <div className="px-0.5 pb-3 md:hidden">
+              <h1 className="text-slate-800 font-bold" style={{ fontSize: '22px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                {pageTitle}
+              </h1>
+            </div>
+          )}
+        </header>
+
+        {/* Page content */}
+        <main
+          id="app-main-scroll"
+          className={isDetailPage
+            ? 'flex-1 overflow-hidden flex flex-col min-h-0'
+            : 'flex-1 overflow-y-auto px-4 md:px-6 pt-4 min-h-0'
+          }
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
+          }}
+        >
+          <div className={isDetailPage ? 'flex-1 min-h-0 flex flex-col' : 'container-app'}>
+            <Outlet />
+          </div>
+        </main>
+
+        {/* Bottom nav — mobile only */}
+        <nav
+          ref={navRef}
+          className="shrink-0 bg-white border-t border-slate-100 md:hidden"
+          style={{
+            zIndex: Z_NAV,
+            boxShadow: '0 -4px 24px rgba(37,99,235,0.07)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <div className="flex" style={{ height: 60 }}>
+            {links.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/orders'}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
+                style={{ WebkitTapHighlightColor: 'transparent', minHeight: 60 }}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span
+                        className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                        style={{ width: 32, height: 3, background: 'linear-gradient(90deg, #2563eb, #60a5fa)', borderRadius: '0 0 4px 4px' }}
+                      />
+                    )}
+                    <span
+                      className="flex items-center justify-center rounded-xl transition-all duration-150"
+                      style={{
+                        width: 40, height: 32,
+                        background: isActive ? 'linear-gradient(135deg, #eff6ff, #dbeafe)' : 'transparent',
+                      }}
+                    >
+                      <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} color={isActive ? '#2563eb' : '#94a3b8'} />
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#2563eb' : '#94a3b8', letterSpacing: '0.01em' }}>
+                      {label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      </div>
     </div>
   )
 }

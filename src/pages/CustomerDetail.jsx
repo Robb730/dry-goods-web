@@ -3,7 +3,8 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
   ChevronLeft, MapPin, Wallet, Package, CreditCard,
-  CheckCircle2, AlertTriangle, ChevronDown, ArrowDownLeft, Truck
+  CheckCircle2, AlertTriangle, ChevronDown, ArrowDownLeft, Truck,
+  Eye, EyeOff
 } from 'lucide-react'
 
 // ── Fonts ─────────────────────────────────────────────────────────────────────
@@ -252,6 +253,7 @@ export default function CustomerDetail() {
   const [error, setError] = useState(null)
   const [showPayment, setShowPayment] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [showStats, setShowStats] = useState(false)
 
   // Ref for the scrollable container — used to jump to bottom on load
   const scrollRef = useRef(null)
@@ -473,24 +475,69 @@ export default function CustomerDetail() {
           </button>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2' }}>
-            <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total Spend</p>
-            <p style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', letterSpacing: '-0.02em' }}>{formatPeso(totalSpend)}</p>
-          </div>
-          <div style={{ background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2' }}>
-            <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total Paid</p>
-            <p style={{ fontSize: 15, fontWeight: 800, color: '#16a34a', letterSpacing: '-0.02em' }}>{formatPeso(totalPaid)}</p>
-          </div>
-          <div style={{ gridColumn: 'span 2', background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Deliveries Completed</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{totalOrders} orders</p>
+        {/* Summary toggle — hidden by default */}
+        <button
+          onClick={() => setShowStats(v => !v)}
+          aria-expanded={showStats}
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 10,
+            padding: '10px 14px',
+            marginBottom: showStats ? 10 : 12,
+            borderRadius: 14,
+            border: `1.5px solid ${showStats ? '#0f172a' : '#e8edf2'}`,
+            background: showStats ? '#0f172a' : '#fff',
+            cursor: 'pointer',
+            fontFamily: F,
+            transition: 'all 0.2s',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: showStats ? 'rgba(255,255,255,0.12)' : '#f8fafc',
+              border: `1px solid ${showStats ? 'rgba(255,255,255,0.14)' : '#eef2f7'}`,
+            }}>
+              {showStats ? <EyeOff size={13} color="#fff" strokeWidth={2} /> : <Eye size={13} color="#64748b" strokeWidth={2} />}
+            </span>
+            <span style={{ textAlign: 'left' }}>
+              <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: showStats ? '#fff' : '#0f172a', letterSpacing: '-0.01em', lineHeight: 1 }}>
+                {showStats ? 'Hide ledger summary' : 'Show ledger summary'}
+              </span>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: showStats ? 'rgba(255,255,255,0.55)' : '#94a3b8', marginTop: 1 }}>
+                {showStats ? 'Tap to hide totals' : 'Total spend · Total paid · Deliveries'}
+              </span>
+            </span>
+          </span>
+          <ChevronDown size={16} strokeWidth={2.2} color={showStats ? '#fff' : '#94a3b8'} style={{ flexShrink: 0, transition: 'transform 0.22s', transform: showStats ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+        </button>
+
+        {showStats && (
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12,
+            animation: 'statsIn 0.22s cubic-bezier(0.32,0.72,0,1)',
+          }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2' }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total Spend</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', letterSpacing: '-0.02em' }}>{formatPeso(totalSpend)}</p>
             </div>
-            <Truck size={20} color="#e2e8f0" strokeWidth={1.5} />
+            <div style={{ background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2' }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total Paid</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#16a34a', letterSpacing: '-0.02em' }}>{formatPeso(totalPaid)}</p>
+            </div>
+            <div style={{ gridColumn: 'span 2', background: '#fff', borderRadius: 14, padding: '11px 14px', border: '1px solid #e8edf2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Deliveries Completed</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{totalOrders} orders</p>
+              </div>
+              <Truck size={20} color="#e2e8f0" strokeWidth={1.5} />
+            </div>
           </div>
-        </div>
+        )}
+        <style>{`@keyframes statsIn { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: translateY(0) } }`}</style>
 
         {/* Transaction panel header — sits just above the scrollable list */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px', marginBottom: 8 }}>

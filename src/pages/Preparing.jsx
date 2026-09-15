@@ -188,7 +188,7 @@ export default function Preparing() {
           <p style={{ fontSize: '12px' }}>{search || locationFilter !== 'All' ? 'Try adjusting your filters' : 'Orders moved to preparing will appear here'}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5 pb-28">
+        <div className="grid gap-2.5 pb-4 grid-cols-1 sm:grid-cols-2">
           {filtered.map(o => (
             <PreparingCard key={o.id} order={o} onClick={() => navigate(`/preparing/${o.id}`)} />
           ))}
