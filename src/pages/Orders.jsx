@@ -118,12 +118,12 @@ function OrderDetailModal({ order, onClose, onPrepare }) {
   return (
     <div
       className="fixed inset-0 flex items-end justify-center z-50 px-4 pb-0"
-      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)', overscrollBehavior: 'contain', touchAction: 'none' }}
       onClick={onClose}
     >
       <div
         className="w-full max-w-sm bg-white"
-        style={{ borderRadius: '20px 20px 0 0', boxShadow: '0 -8px 40px rgba(15,23,42,0.18)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        style={{ borderRadius: '20px 20px 0 0', boxShadow: '0 -8px 40px rgba(15,23,42,0.18)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overscrollBehavior: 'contain' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar */}
@@ -163,7 +163,7 @@ function OrderDetailModal({ order, onClose, onPrepare }) {
         </p>
 
         {/* Scrollable items */}
-        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 4 }}>
+        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 4, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
           <div className="mx-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #f1f5f9' }}>
             {(order.order_items ?? []).map((item, i) => (
               <div key={item.id ?? i}
@@ -208,7 +208,7 @@ function ConfirmPrepareModal({ order, onConfirm, onCancel, loading }) {
   return (
     <div
       className="fixed inset-0 flex items-end justify-center z-50 px-4 pb-6"
-      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)', overscrollBehavior: 'contain', touchAction: 'none' }}
     >
       <div
         className="w-full max-w-sm rounded-3xl p-6 bg-white"

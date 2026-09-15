@@ -73,7 +73,7 @@ function ConfirmModal({ customerName, originalTotal, finalTotal, finalProfit, it
   const hasProfit = finalProfit != null && !isNaN(finalProfit);
   return (
     <div className="fixed inset-0 z-50 flex items-end"
-      style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)" }}>
+      style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)", overscrollBehavior: 'contain', touchAction: 'none' }}>
       <div className="w-full bg-white rounded-t-3xl px-5 pt-5 pb-8">
         <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
         <div className="flex items-center gap-3 mb-5">
@@ -419,11 +419,11 @@ export default function DeliveryDetail() {
   const orderCode = "ADG-" + String(id).slice(-6).toUpperCase();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col" style={{ background: "transparent" }}>
 
-      {/* ── Sub-header ── */}
-      <div className="shrink-0 bg-white border-b border-slate-100 px-4 pt-3 pb-3"
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+      {/* ── Sub-header — sticky under Layout header ── */}
+      <div className="sticky top-0 z-10 shrink-0 bg-white border-b border-slate-100 px-4 pt-3 pb-3"
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 16, marginBottom: 8 }}>
 
         {/* Row 1: back + customer + total */}
         <div className="flex items-center gap-2 mb-2">
@@ -562,8 +562,8 @@ export default function DeliveryDetail() {
         )}
       </div>
 
-      {/* ── Scrollable item list ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3" style={{ minHeight: 0 }}>
+      {/* ── Item list — part of main scroll ── */}
+      <div className="px-4 md:px-6 py-3">
         {adjustedCount > 0 && (
           <div className="flex items-center gap-1.5 mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
             <AlertTriangle size={12} className="text-amber-500 shrink-0" />
@@ -590,9 +590,9 @@ export default function DeliveryDetail() {
         {error && <div className="px-4 py-3 rounded-2xl bg-red-50 border border-red-100 text-xs text-red-500">{error}</div>}
       </div>
 
-      {/* ── Bottom CTA ── */}
-      <div className="shrink-0 bg-white border-t border-slate-100 px-4 pt-3 pb-4"
-        style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.07)" }}>
+      {/* ── Bottom CTA — sticky above bottom nav ── */}
+      <div className="sticky z-10 shrink-0 bg-white border-t border-slate-100 px-4 pt-3"
+        style={{ bottom: 0, paddingBottom: "max(12px, env(safe-area-inset-bottom))", boxShadow: "0 -4px 20px rgba(0,0,0,0.07)", borderRadius: 16, marginTop: 8 }}>
         <button onClick={() => setShowConfirm(true)} disabled={activeItems.length === 0}
           className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 active:opacity-90 disabled:cursor-not-allowed transition-all"
           style={{ background: activeItems.length === 0 ? "#cbd5e1" : "linear-gradient(135deg, #16a34a, #15803d)" }}>

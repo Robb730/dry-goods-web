@@ -306,7 +306,7 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
           </button>
           {cartOpen && (
             <div className="px-3 pb-3" style={{ borderTop: '1px solid #bfdbfe' }}>
-              <div className="flex flex-col gap-1.5 pt-2" style={{ maxHeight: 160, overflowY: 'auto' }}>
+              <div className="flex flex-col gap-1.5 pt-2" style={{ maxHeight: 160, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
                 {cartItems.map(item => (
                   <div key={item._key} className="flex items-center justify-between">
                     <span style={{ fontSize: '12px', color: '#1e40af' }}>
@@ -378,7 +378,7 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
         const existingCartItem = cartItems.find(i => i._key === String(activeProdId))
         const activeProduct = cat.sizes.find(p => p.id === activeProdId)
         return (
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -8px 32px rgba(15,23,42,0.12)', borderRadius: '20px 20px 0 0', padding: '16px 16px 80px' }}>
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -8px 32px rgba(15,23,42,0.12)', borderRadius: '20px 20px 0 0', padding: '16px 16px', paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 16px))', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
             <div className="flex items-center justify-between mb-3">
               <p className="font-black text-slate-800" style={{ fontSize: '15px', letterSpacing: '-0.02em' }}>{cat.name}</p>
               <button onClick={() => setOpenCat(null)} className="rounded-full flex items-center justify-center" style={{ width: 28, height: 28, background: '#f1f5f9' }}>
@@ -466,7 +466,7 @@ function StepReview({ customer, cartItems, onRemoveItem, onSubmit, submitting })
         </div>
 
         {/* Scrollable item rows */}
-        <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+        <div style={{ maxHeight: 320, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
           {cartItems.map((item, i) => (
             <div key={item._key} className="flex items-center justify-between px-4 py-3" style={{ borderTop: i > 0 ? '1px solid #f1f5f9' : 'none' }}>
               <div className="flex-1 min-w-0">

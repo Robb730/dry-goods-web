@@ -186,7 +186,7 @@ function ConfirmReadyModal({ items, total, onConfirm, onCancel, loading }) {
   return (
     <div
   className="fixed inset-0 flex items-end justify-center z-50 px-4"
-  style={{ paddingBottom: 'max(90px, calc(env(safe-area-inset-bottom) + 82px))', background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }}
+  style={{ paddingBottom: 'max(90px, calc(env(safe-area-inset-bottom) + 82px))', background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)', overscrollBehavior: 'contain', touchAction: 'none' }}
 >
       <div
         className="w-full max-w-sm rounded-3xl p-6 bg-white"
@@ -393,21 +393,22 @@ const allActedOn = neutralCount === 0;
 
   return (
     <div
-      className="flex flex-col fixed left-0 right-0"
+      className="flex flex-col"
       style={{
-        top: 60,
-        bottom: 66,
-        minHeight: 0,
         fontFamily: "'DM Sans', sans-serif",
-        background: "#f0f4ff",
+        background: "transparent",
       }}
     >
-      {/* Header — never scrolls */}
+      {/* Header — sticky under Layout header */}
       <div
+        className="sticky top-0 z-10"
         style={{
           flexShrink: 0,
-          padding: "16px 16px 8px",
+          padding: "12px 16px 8px",
           background: "#f0f4ff",
+          borderBottom: "1px solid #e8edf0",
+          marginBottom: 4,
+          borderRadius: 16,
         }}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -480,9 +481,9 @@ const allActedOn = neutralCount === 0;
         )}
       </div>
 
-      {/* Scrollable items panel */}
+      {/* Items — part of main scroll, not nested */}
       <div
-        style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 16px" }}
+        style={{ padding: "8px 16px 12px" }}
       >
         {loading && (
           <div className="flex flex-col gap-3 pt-2">
@@ -521,15 +522,20 @@ const allActedOn = neutralCount === 0;
         )}
       </div>
 
-      {/* Bottom bar — always visible */}
+      {/* Bottom bar — sticky above bottom nav */}
       {!loading && !error && (
         <div
+          className="sticky z-10"
           style={{
             flexShrink: 0,
-            padding: "12px 16px 16px",
+            bottom: 0,
+            marginTop: 8,
+            padding: "12px 16px",
+            paddingBottom: "max(12px, env(safe-area-inset-bottom))",
             background: "white",
             borderTop: "1px solid #e2e8f0",
             boxShadow: "0 -4px 16px rgba(15,23,42,0.06)",
+            borderRadius: 16,
           }}
         >
           <div className="flex items-center justify-between mb-2 px-1">

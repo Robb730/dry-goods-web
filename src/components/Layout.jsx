@@ -46,6 +46,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const navRef = useRef(null)
+  const headerRef = useRef(null)
 
   // Measure the nav bar's real rendered height instead of guessing a fixed
   // number. This keeps content padding correct across devices, font-size
@@ -67,6 +68,34 @@ export default function Layout() {
     }
   }, [])
 
+  // Block touch drag on chrome so holding nav/header never scrolls main
+  useEffect(() => {
+    const nav = navRef.current
+    const header = headerRef.current
+    if (!nav && !header) return
+    function block(e) {
+      // Allow taps on buttons/links, but block drag/scroll
+      const t = e.target
+      if (t && t.closest && t.closest('a, button')) {
+        // let click go through, but prevent move from bubbling to main
+        if (e.type === 'touchmove') e.preventDefault()
+        return
+      }
+      if (e.type === 'touchmove') e.preventDefault()
+    }
+    const els = [nav, header].filter(Boolean)
+    els.forEach(el => {
+      el.addEventListener('touchmove', block, { passive: false })
+      el.addEventListener('touchstart', block, { passive: true })
+    })
+    return () => {
+      els.forEach(el => {
+        el.removeEventListener('touchmove', block)
+        el.removeEventListener('touchstart', block)
+      })
+    }
+  }, [])
+
   const isDetailPage = DETAIL_PREFIXES.some((prefix) =>
     location.pathname.startsWith(prefix) && location.pathname.length > prefix.length
   )
@@ -80,9 +109,8 @@ export default function Layout() {
 
   return (
     <div
-      className="flex flex-col md:flex-row overflow-hidden"
+      className="fixed inset-0 flex flex-col md:flex-row overflow-hidden"
       style={{
-        height: '100dvh',
         background: '#f0f4ff',
         fontFamily: "'DM Sans', sans-serif",
         '--bottom-nav-space': `calc(${navHeight}px + env(safe-area-inset-bottom))`,
@@ -133,11 +161,14 @@ export default function Layout() {
 
       {/* Main column */}
       <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">
-        {/* Top bar */}
+        {/* Top bar — stays fixed, never scrolls */}
         <header
-          className="shrink-0 bg-white px-4 md:px-6 shadow-[0_1px_0_#e2e8f0]"
+          ref={headerRef}
+          className="app-chrome shrink-0 bg-white px-4 md:px-6 shadow-[0_1px_0_#e2e8f0] relative z-20"
           style={{
             paddingTop: 'max(12px, env(safe-area-inset-top))',
+            touchAction: 'none',
+            overscrollBehavior: 'none',
           }}
         >
           <div className="flex items-center justify-between mb-3 md:mb-0 md:py-3">
@@ -176,31 +207,34 @@ export default function Layout() {
           )}
         </header>
 
-        {/* Page content */}
+        {/* Page content — the ONLY scroll container on mobile */}
         <main
           id="app-main-scroll"
-          className={isDetailPage
-            ? 'flex-1 overflow-hidden flex flex-col min-h-0'
-            : 'flex-1 overflow-y-auto px-4 md:px-6 pt-4 min-h-0'
-          }
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 md:px-6 pt-4"
           style={{
             WebkitOverflowScrolling: 'touch',
-            paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
+            overscrollBehavior: 'contain',
+            overscrollBehaviorY: 'contain',
+            touchAction: 'pan-y',
+            paddingBottom: 'var(--bottom-nav-space)',
+            transform: 'translateZ(0)',
           }}
         >
-          <div className={isDetailPage ? 'flex-1 min-h-0 flex flex-col' : 'container-app'}>
+          <div className="container-app pb-2">
             <Outlet />
           </div>
         </main>
 
-        {/* Bottom nav — mobile only */}
+        {/* Bottom nav — mobile only, fixed above safe area, never scrolls */}
         <nav
           ref={navRef}
-          className="shrink-0 bg-white border-t border-slate-100 md:hidden"
+          className="app-chrome shrink-0 bg-white border-t border-slate-100 md:hidden relative z-20"
           style={{
             zIndex: Z_NAV,
             boxShadow: '0 -4px 24px rgba(37,99,235,0.07)',
             paddingBottom: 'env(safe-area-inset-bottom)',
+            touchAction: 'none',
+            overscrollBehavior: 'none',
           }}
         >
           <div className="flex" style={{ height: 60 }}>

@@ -46,7 +46,7 @@ function PaymentModal({ customer, onConfirm, onCancel, loading }) {
   return (
     <div
       onClick={e => e.target === e.currentTarget && onCancel()}
-      style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', fontFamily: F }}
+      style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', fontFamily: F, overscrollBehavior: 'contain', touchAction: 'none' }}
     >
       <style>{`
         @keyframes sheetUp { from { transform: translateY(100%); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
@@ -255,19 +255,7 @@ export default function CustomerDetail() {
   const [paying, setPaying] = useState(false)
   const [showStats, setShowStats] = useState(false)
 
-  // Ref for the scrollable container — used to jump to bottom on load
-  const scrollRef = useRef(null)
-  // Sentinel element at the very end of the list
-  const bottomRef = useRef(null)
-
   useEffect(() => { load() }, [id])
-
-  // Scroll to bottom whenever data finishes loading
-  useEffect(() => {
-    if (!loading && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'instant' })
-    }
-  }, [loading])
 
   async function load() {
     setLoading(true); setError(null)
@@ -404,21 +392,23 @@ export default function CustomerDetail() {
   const lastEntry = withBalances[withBalances.length - 1]
 
   return (
-    <div style={{ fontFamily: F, background: '#f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: F, background: 'transparent', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased', paddingBottom: 12 }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         .no-scrollbar::-webkit-scrollbar { display: none }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* ── Sticky top bar ── */}
-      <div style={{
+      {/* ── Sticky top bar — stays under Layout header while transactions scroll ── */}
+      <div className="sticky top-0" style={{
         background: '#fff',
         borderBottom: '1px solid #e8edf2',
         padding: '12px 16px',
         display: 'flex', alignItems: 'center', gap: 12,
         flexShrink: 0,
         zIndex: 10,
+        marginBottom: 12,
+        borderRadius: 16,
       }}>
         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <ChevronLeft size={18} color="#0f172a" strokeWidth={2} />
@@ -548,14 +538,11 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {/* ── Transaction panel: scrollable, fills remaining height ── */}
+      {/* ── Transaction panel: part of main scroll — no nested scroller ── */}
       <div
-        ref={scrollRef}
         className="no-scrollbar"
         style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '0 14px 88px',
+          padding: '0 14px 24px',
           maxWidth: 540, width: '100%', margin: '0 auto', boxSizing: 'border-box',
         }}
       >
@@ -587,9 +574,6 @@ export default function CustomerDetail() {
         {error && (
           <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 12, background: '#fef2f2', border: '1px solid #fecaca', fontSize: 12, color: '#dc2626', fontWeight: 500 }}>{error}</div>
         )}
-
-        {/* Sentinel — auto-scrolled into view on load to show latest transaction */}
-        <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
       {showPayment && customer && (
