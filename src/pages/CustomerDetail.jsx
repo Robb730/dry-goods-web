@@ -33,13 +33,15 @@ const LEVEL = {
 }
 
 // ── Payment Modal ─────────────────────────────────────────────────────────────
-function PaymentModal({ customer, onConfirm, onCancel, loading }) {
+function PaymentModal({ customer, suggestedAmount, suggestedOrderNum, onConfirm, onCancel, loading }) {
   const [amount, setAmount] = useState('')
   const ref = useRef(null)
   const balance = Number(customer.remaining_balance ?? 0)
   const parsed = parseFloat(amount)
   const valid = !isNaN(parsed) && parsed > 0
   const over = valid && parsed > balance
+  const showSuggested = suggestedAmount != null && Number(suggestedAmount) > 0 && Math.abs(Number(suggestedAmount) - balance) > 0.01
+  const isSuggestedActive = valid && Math.abs(parsed - Number(suggestedAmount)) < 0.01
 
   useEffect(() => { setTimeout(() => ref.current?.focus(), 120) }, [])
 
@@ -105,7 +107,31 @@ function PaymentModal({ customer, onConfirm, onCancel, loading }) {
         </div>
 
         {balance > 0 && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+            {showSuggested && (
+              <button
+                onClick={() => setAmount(String(Math.round(Number(suggestedAmount) * 100) / 100))}
+                title={suggestedOrderNum ? `Order #${suggestedOrderNum}` : 'Latest order total'}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '7px 13px', borderRadius: 99,
+                  border: `1.5px solid ${isSuggestedActive ? '#fb923c' : '#fed7aa'}`,
+                  background: isSuggestedActive ? '#ffedd5' : '#fff7ed',
+                  fontSize: 12, fontWeight: 800, color: '#9a3412', cursor: 'pointer', fontFamily: F,
+                  boxShadow: isSuggestedActive ? '0 1px 8px rgba(251,146,60,0.25)' : 'none',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{
+                  width: 18, height: 18, borderRadius: 999, background: isSuggestedActive ? '#f97316' : '#ffedd5',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  border: '1px solid #fed7aa',
+                }}>
+                  <Package size={10} strokeWidth={2.2} color={isSuggestedActive ? '#fff' : '#ea580c'} />
+                </span>
+                Last order{suggestedOrderNum ? ` #${suggestedOrderNum}` : ''} · {formatPeso(suggestedAmount)}
+              </button>
+            )}
             {[balance, balance / 2, balance / 4].filter(v => v > 0).slice(0, 3).map((v, i) => (
               <button key={i} onClick={() => setAmount(String(Math.round(v * 100) / 100))}
                 style={{ padding: '6px 12px', borderRadius: 99, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer', fontFamily: F }}>
@@ -400,6 +426,8 @@ export default function CustomerDetail() {
   const totalSpend = orders.reduce((s, o) => s + Number(o.order_total ?? 0), 0)
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid ?? 0), 0)
   const lastEntry = withBalances[withBalances.length - 1]
+  const suggestedAmount = lastEntry?.type === 'order' ? Number(lastEntry.amount) : null
+  const suggestedOrderNum = lastEntry?.type === 'order' ? lastEntry.orderNum : null
 
   return (
     <div style={{ fontFamily: F, background: '#f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', WebkitFontSmoothing: 'antialiased' }}>
@@ -592,7 +620,7 @@ export default function CustomerDetail() {
       </div>
 
       {showPayment && customer && (
-        <PaymentModal customer={customer} onConfirm={handlePayment} onCancel={() => setShowPayment(false)} loading={paying} />
+        <PaymentModal customer={customer} suggestedAmount={suggestedAmount} suggestedOrderNum={suggestedOrderNum} onConfirm={handlePayment} onCancel={() => setShowPayment(false)} loading={paying} />
       )}
     </div>
   )
