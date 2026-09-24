@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import {
   ChevronLeft, MapPin, Wallet, Package, CreditCard,
   CheckCircle2, AlertTriangle, ChevronDown, ArrowDownLeft, Truck,
-  Eye, EyeOff
+  Eye, EyeOff, History
 } from 'lucide-react'
 
 // ── Fonts ─────────────────────────────────────────────────────────────────────
@@ -414,17 +414,23 @@ export default function CustomerDetail() {
   // Sort oldest → newest (this is both the display order AND the running balance order)
   ledger.sort((a, b) => a.sortKey - b.sortKey)
 
+  // Balance brought forward: remote detail older than the retention window is
+  // pruned on Supabase (full history lives in the desktop app), so the visible
+  // rows alone don't sum to the header balance. This seeds the running balance
+  // with the net of everything older — one summarized line for pruned history.
+  const totalOrders = orders.length
+  const totalSpend = orders.reduce((s, o) => s + Number(o.order_total ?? 0), 0)
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid ?? 0), 0)
+  const broughtForward = Math.round((balance - (totalSpend - totalPaid)) * 100) / 100
+
   // Compute running balance in the same pass — no reversal needed
-  let running = 0
+  let running = broughtForward
   const withBalances = ledger.map(entry => {
     if (entry.type === 'order') running += entry.amount
     else running -= entry.amount
     return { ...entry, runningBalance: Math.max(0, running) }
   })
 
-  const totalOrders = orders.length
-  const totalSpend = orders.reduce((s, o) => s + Number(o.order_total ?? 0), 0)
-  const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid ?? 0), 0)
   const lastEntry = withBalances[withBalances.length - 1]
   const suggestedAmount = lastEntry?.type === 'order' ? Number(lastEntry.amount) : null
   const suggestedOrderNum = lastEntry?.type === 'order' ? lastEntry.orderNum : null
@@ -594,6 +600,41 @@ export default function CustomerDetail() {
           </div>
         ) : (
           <>
+            {broughtForward !== 0 && (
+              <div style={{
+                background: '#fffbeb',
+                borderRadius: 16,
+                border: '1px dashed #f59e0b',
+                marginBottom: 6,
+                overflow: 'hidden',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: '#fef3c7',
+                  }}>
+                    <History size={16} strokeWidth={2} color="#d97706" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
+                      Balance brought forward
+                    </p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, fontWeight: 500 }}>
+                      Older history summarized
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.02em', color: '#d97706' }}>
+                      +{formatPeso(broughtForward)}
+                    </p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                      bal {formatPeso(Math.max(0, broughtForward))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             {withBalances.map((entry, i) => (
               <TxCard
                 key={entry.id}
