@@ -493,7 +493,7 @@ export default function Orders() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-2.5 pb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
+        <div className="grid gap-2.5 pb-28 sm:pb-24 grid-cols-1 sm:grid-cols-2">
           {filtered.map(order => (
             <OrderCard
   key={order.id}
@@ -505,12 +505,11 @@ onView={o => setViewing(o)}  // ← add this
         </div>
       )}
 
-      {/* FAB — respects safe area and bottom nav */}
+      {/* FAB — fixed to viewport (Layout <main> has no transform), clears bottom nav on mobile */}
       <button
         onClick={() => navigate('/orders/new')}
-        className="fixed right-4 md:right-6 flex items-center gap-2 rounded-2xl px-4 active:scale-95 transition-transform duration-100"
+        className="fixed right-4 md:right-8 bottom-[calc(var(--bottom-nav-space,76px)+12px)] md:bottom-6 flex items-center gap-2 rounded-2xl px-4 active:scale-95 transition-transform duration-100"
         style={{
-          bottom: 'calc(var(--bottom-nav-space, 76px) + 12px)',
           paddingTop: 12,
           paddingBottom: 12,
           minHeight: 44,
@@ -519,7 +518,7 @@ onView={o => setViewing(o)}  // ← add this
           color: 'white',
           fontWeight: 700,
           fontSize: '13px',
-          zIndex: 40,
+          zIndex: 41,
         }}
       >
         <Plus size={16} strokeWidth={2.5} />

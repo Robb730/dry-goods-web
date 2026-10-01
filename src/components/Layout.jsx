@@ -29,6 +29,11 @@ const pageTitles = {
 
 const DETAIL_PREFIXES = ['/delivery/', '/preparing/', '/customers/']
 
+// Build stamp baked in at build time (vite.config.js `define`). Lets anyone
+// tell on sight whether a phone PWA is running a stale cached bundle.
+// eslint-disable-next-line no-undef
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
+
 /*
  * Z-INDEX MAP (keep this in sync with any modal/overlay added in child pages)
  *   nav (this file)........... 40
@@ -156,6 +161,9 @@ export default function Layout() {
             <LogOut size={15} strokeWidth={2.2} />
             Logout
           </button>
+          <p className="text-center" style={{ fontSize: '9px', color: '#cbd5e1', marginTop: 4 }} title="App build version">
+            v{APP_VERSION}
+          </p>
         </div>
       </aside>
 
@@ -176,8 +184,13 @@ export default function Layout() {
               <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center md:hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
                 <TShirtMark size={16} />
               </div>
-              <span className="font-bold text-slate-800 tracking-tight md:hidden" style={{ fontSize: '15px', letterSpacing: '-0.01em' }}>
-                Abella's Dry Goods
+              <span className="flex flex-col leading-none md:hidden">
+                <span className="font-bold text-slate-800 tracking-tight" style={{ fontSize: '15px', letterSpacing: '-0.01em' }}>
+                  Abella's Dry Goods
+                </span>
+                <span style={{ fontSize: '9px', color: '#cbd5e1' }} title="App build version">
+                  v{APP_VERSION}
+                </span>
               </span>
               {/* Desktop: show page title inline here */}
               <h1 className="hidden md:block text-slate-800 font-bold" style={{ fontSize: '18px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
@@ -219,7 +232,6 @@ export default function Layout() {
             overscrollBehaviorY: 'contain',
             touchAction: 'pan-y',
             paddingBottom: isDetailPage ? 0 : 'var(--bottom-nav-space)',
-            transform: 'translateZ(0)',
           }}
         >
           <div className={isDetailPage ? 'flex-1 min-h-0 flex flex-col' : 'container-app pb-2'}>

@@ -271,7 +271,7 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
 
   return (
     // Extra bottom padding so content isn't hidden behind the fixed "Review Order" bar
-    <div style={{ paddingBottom: 100 }}>
+    <div style={{ paddingBottom: 128 }}>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -378,7 +378,8 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
         const existingCartItem = cartItems.find(i => i._key === String(activeProdId))
         const activeProduct = cat.sizes.find(p => p.id === activeProdId)
         return (
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -8px 32px rgba(15,23,42,0.12)', borderRadius: '20px 20px 0 0', padding: '16px 16px', paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 16px))', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
+          <div className="fixed bottom-0 left-0 right-0 md:left-[240px]" style={{ zIndex: 50, background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -8px 32px rgba(15,23,42,0.12)', borderRadius: '20px 20px 0 0', padding: '16px 16px', paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 16px))', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
+            <div className="w-full max-w-[640px] md:max-w-[720px] mx-auto">
             <div className="flex items-center justify-between mb-3">
               <p className="font-black text-slate-800" style={{ fontSize: '15px', letterSpacing: '-0.02em' }}>{cat.name}</p>
               <button onClick={() => setOpenCat(null)} className="rounded-full flex items-center justify-center" style={{ width: 28, height: 28, background: '#f1f5f9' }}>
@@ -428,6 +429,7 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
                   {q}dz
                 </button>
               ))}
+            </div>
             </div>
           </div>
         )
@@ -566,13 +568,14 @@ export default function NewOrder() {
         <>
           <ItemPicker customer={customer} cartItems={cartItems} onCartChange={setCartItems} />
 
-          {/* Fixed "Review Order" bar — safe-area aware, responsive width */}
+          {/* Fixed "Review Order" bar — viewport-fixed (Layout <main> has no
+              transform), clears bottom nav on mobile, floats on desktop */}
           <div
-            className="fixed left-0 right-0 md:left-[240px] flex justify-center"
-            style={{ bottom: 'var(--bottom-nav-space, 76px)', padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', background: 'linear-gradient(to top, white 88%, transparent)', zIndex: 40 }}
+            className="fixed left-0 right-0 md:left-[240px] bottom-[var(--bottom-nav-space,76px)] md:bottom-6 flex justify-center"
+            style={{ padding: '10px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'white', borderTop: '1px solid #f1f5f9', boxShadow: '0 -4px 24px rgba(15,23,42,0.06)', zIndex: 30 }}
           >
             <button onClick={goNext} disabled={!canNext}
-              className="w-full max-w-[640px] rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100"
+              className="w-full max-w-[640px] md:max-w-[720px] rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100"
               style={{ minHeight: 48, background: canNext ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : '#e2e8f0', color: canNext ? 'white' : '#94a3b8', fontSize: '14px', letterSpacing: '-0.01em', boxShadow: canNext ? '0 4px 20px rgba(37,99,235,0.4)' : 'none' }}>
               Review Order <ArrowRight size={15} strokeWidth={2.5} />
             </button>
