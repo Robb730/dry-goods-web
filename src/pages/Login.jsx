@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { APP_VERSION_LABEL } from "../lib/version";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -125,6 +126,9 @@ export default function Login() {
       </div>
 
       <p className="mt-8 text-slate-300 text-xs">Dry Goods © {new Date().getFullYear()}</p>
+      <p className="mt-1.5 text-slate-400 text-[11px] font-medium" title={`App build version — ${APP_VERSION_LABEL}`}>
+        {APP_VERSION_LABEL}
+      </p>
     </div>
   );
 }

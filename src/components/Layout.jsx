@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { APP_VERSION_LABEL } from '../lib/version'
 import { ClipboardList, Package, Truck, Users, LogOut } from 'lucide-react'
 
 function TShirtMark({ size = 15, color = 'white' }) {
@@ -29,10 +30,18 @@ const pageTitles = {
 
 const DETAIL_PREFIXES = ['/delivery/', '/preparing/', '/customers/']
 
-// Build stamp baked in at build time (vite.config.js `define`). Lets anyone
-// tell on sight whether a phone PWA is running a stale cached bundle.
-// eslint-disable-next-line no-undef
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
+// Shared version badge style — must stay legible on white (the old 9px
+// #cbd5e1 on white was effectively invisible on the deployed app).
+const VERSION_BADGE_STYLE = {
+  fontSize: '10px',
+  fontWeight: 600,
+  color: '#64748b',
+  background: '#f1f5f9',
+  borderRadius: 6,
+  padding: '1px 6px',
+  display: 'inline-block',
+  letterSpacing: '0.01em',
+}
 
 /*
  * Z-INDEX MAP (keep this in sync with any modal/overlay added in child pages)
@@ -161,8 +170,10 @@ export default function Layout() {
             <LogOut size={15} strokeWidth={2.2} />
             Logout
           </button>
-          <p className="text-center" style={{ fontSize: '9px', color: '#cbd5e1', marginTop: 4 }} title="App build version">
-            v{APP_VERSION}
+          <p className="text-center" style={{ marginTop: 6 }}>
+            <span style={VERSION_BADGE_STYLE} title={`App build version — ${APP_VERSION_LABEL}`}>
+              {APP_VERSION_LABEL}
+            </span>
           </p>
         </div>
       </aside>
@@ -184,12 +195,12 @@ export default function Layout() {
               <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center md:hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
                 <TShirtMark size={16} />
               </div>
-              <span className="flex flex-col leading-none md:hidden">
+              <span className="flex flex-col leading-none md:hidden items-start gap-1">
                 <span className="font-bold text-slate-800 tracking-tight" style={{ fontSize: '15px', letterSpacing: '-0.01em' }}>
                   Abella's Dry Goods
                 </span>
-                <span style={{ fontSize: '9px', color: '#cbd5e1' }} title="App build version">
-                  v{APP_VERSION}
+                <span style={VERSION_BADGE_STYLE} title={`App build version — ${APP_VERSION_LABEL}`}>
+                  {APP_VERSION_LABEL}
                 </span>
               </span>
               {/* Desktop: show page title inline here */}
@@ -205,9 +216,16 @@ export default function Layout() {
               <LogOut size={13} strokeWidth={2.2} />
               Logout
             </button>
-            {/* Desktop secondary title / detail crumb */}
-            <span className="hidden md:block text-slate-400" style={{ fontSize: '12px', fontWeight: 500 }}>
-              {isDetailPage ? pageTitle : ''}
+            {/* Desktop secondary title / version — version always visible on deploy */}
+            <span className="hidden md:flex items-center gap-2">
+              {isDetailPage && (
+                <span className="text-slate-400" style={{ fontSize: '12px', fontWeight: 500 }}>
+                  {pageTitle}
+                </span>
+              )}
+              <span style={VERSION_BADGE_STYLE} title={`App build version — ${APP_VERSION_LABEL}`}>
+                {APP_VERSION_LABEL}
+              </span>
             </span>
           </div>
 
