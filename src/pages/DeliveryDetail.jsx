@@ -150,8 +150,9 @@ function ConfirmModal({ customerName, originalTotal, finalTotal, finalProfit, it
 }
 
 function ItemCard({ item, isChecked, qty, showProfit, onToggle, onQtyChange }) {
-  const isAbovePacked = qty > item.quantity_dozen;
-  const isBelowPacked = qty < item.quantity_dozen && isChecked;
+  const packedQty = item.packed_qty ?? item.fulfilled_quantity_dozen ?? item.quantity_dozen;
+  const isAbovePacked = qty > packedQty;
+  const isBelowPacked = qty < packedQty && isChecked;
   const lineTotal = item.price_per_dozen * qty;
   const basePrice = item.base_price ?? null;
   const profitPerDz = basePrice != null ? item.price_per_dozen - basePrice : null;
@@ -188,8 +189,8 @@ function ItemCard({ item, isChecked, qty, showProfit, onToggle, onQtyChange }) {
           <p className="mt-0.5 truncate" style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>
             Size {item.product_size}<span className="mx-1.5 opacity-40">·</span>{formatPeso(item.price_per_dozen)}/dz
           </p>
-          {isChecked && isAbovePacked && <p className="mt-1 font-bold" style={{ fontSize: 12, color: "#059669" }}>↑ +{qty - item.fulfilled_quantity_dozen} dz extra</p>}
-          {isChecked && isBelowPacked && <p className="mt-1 font-bold" style={{ fontSize: 12, color: "#d97706" }}>↓ reduced from {item.fulfilled_quantity_dozen} dz</p>}
+          {isChecked && isAbovePacked && <p className="mt-1 font-bold" style={{ fontSize: 12, color: "#059669" }}>↑ +{Math.round((qty - packedQty) * 100) / 100} dz extra</p>}
+          {isChecked && isBelowPacked && <p className="mt-1 font-bold" style={{ fontSize: 12, color: "#d97706" }}>↓ reduced from {packedQty} dz</p>}
         </div>
         <div className="shrink-0 text-right" style={{ minWidth: 68 }}>
           <p className="font-extrabold tabular-nums leading-tight"
@@ -251,7 +252,7 @@ function ItemCard({ item, isChecked, qty, showProfit, onToggle, onQtyChange }) {
           style={{ borderTop: `1.5px solid ${borderColor}40` }}
           onClick={(e) => e.stopPropagation()}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>Delivery qty</span>
-          <QtyStepper value={qty} packedQty={item.quantity_dozen} onChange={onQtyChange} />
+          <QtyStepper value={qty} packedQty={packedQty} onChange={onQtyChange} />
         </div>
       )}
     </div>
@@ -280,7 +281,7 @@ export default function DeliveryDetail() {
   if (!hasCostData) return null;
   return items.reduce((sum, item) => {
     if (item.base_price == null) return sum; // skip items with no cost data
-    const qty = qtys[item.id] ?? item.quantity_dozen;
+    const qty = qtys[item.id] ?? item.packed_qty ?? item.quantity_dozen;
     return sum + (item.price_per_dozen - item.base_price) * qty;
   }, 0);
 }, [items, qtys]);
@@ -298,19 +299,32 @@ export default function DeliveryDetail() {
         }
         const { data: itemData, error: itemErr } = await supabase
           .from("order_items")
-          .select("id, price_per_dozen, fulfilled_quantity_dozen, quantity_dozen, products ( size, base_price, categories ( name ) )")
-          .eq("order_id", id).eq("fulfilled", false).order("id");
+          .select("id, fulfilled, price_per_dozen, fulfilled_quantity_dozen, quantity_dozen, products ( size, base_price, categories ( name ) )")
+          .eq("order_id", id).order("id");
         if (itemErr) throw itemErr;
-        const loaded = (itemData ?? []).map((item) => ({
-          ...item,
-          product_name: item.products?.categories?.name ?? "Unknown",
-          product_size: item.products?.size ?? "—",
-          base_price: item.products?.base_price ?? null,
-        }));
+        const loadedAll = (itemData ?? []).map((item) => {
+          const packed = Number(item.fulfilled_quantity_dozen) > 0
+            ? Number(item.fulfilled_quantity_dozen)
+            : Number(item.quantity_dozen ?? 0);
+          return {
+            ...item,
+            product_name: item.products?.categories?.name ?? "Unknown",
+            product_size: item.products?.size ?? "—",
+            base_price: item.products?.base_price ?? null,
+            packed_qty: packed,
+          };
+        });
+        // Normal flow (via Preparing) arrives with fulfilled=true on packed items.
+        // Quick-sale / direct out_for_delivery orders never went through Preparing
+        // and still have fulfilled=false on everything. Support both:
+        // if any item was packed (fulfilled=true), show only packed items so
+        // preparing-skipped items don't re-appear; otherwise show all items.
+        const packedItems = loadedAll.filter((i) => i.fulfilled === true);
+        const loaded = packedItems.length > 0 ? packedItems : loadedAll;
         setItems(loaded);
         setCheckedIds(new Set());
         const initQtys = {};
-        for (const item of loaded) initQtys[item.id] = item.quantity_dozen;
+        for (const item of loaded) initQtys[item.id] = item.packed_qty;
         setQtys(initQtys);
       } catch (e) {
         console.error(e); setError("Failed to load order.");
@@ -334,7 +348,7 @@ export default function DeliveryDetail() {
   const allChecked = items.length > 0 && uncheckedCount === 0;
 
   const finalTotal = activeItems.reduce(
-    (sum, item) => sum + item.price_per_dozen * (qtys[item.id] ?? item.quantity_dozen), 0,
+    (sum, item) => sum + item.price_per_dozen * (qtys[item.id] ?? item.packed_qty ?? item.quantity_dozen), 0,
   );
   const originalTotal = Number(order?.order_total ?? 0);
   const totalChanged = Math.abs(finalTotal - originalTotal) > 0.001;
@@ -344,14 +358,14 @@ export default function DeliveryDetail() {
   if (!hasCostData) return null;
   return activeItems.reduce((sum, item) => {
     if (item.base_price == null) return sum; // skip items with no cost data
-    const qty = qtys[item.id] ?? item.quantity_dozen;
+    const qty = qtys[item.id] ?? item.packed_qty ?? item.quantity_dozen;
     return sum + (item.price_per_dozen - item.base_price) * qty;
   }, 0);
 }, [activeItems, qtys]);
 
   const hasCostData = items.some((i) => i.base_price != null);
 
-  const adjustedCount = activeItems.filter((i) => (qtys[i.id] ?? i.quantity_dozen) !== i.quantity_dozen).length;
+  const adjustedCount = activeItems.filter((i) => (qtys[i.id] ?? i.packed_qty ?? i.quantity_dozen) !== (i.packed_qty ?? i.quantity_dozen)).length;
   const filteredChecked = filteredItems.filter((i) => checkedIds.has(i.id)).length;
   const filteredUnchecked = filteredItems.length - filteredChecked;
 
@@ -384,8 +398,8 @@ export default function DeliveryDetail() {
     for (const item of items) {
       const delivering = checkedIds.has(item.id);
       await supabase.from("order_items").update({
-        fulfilled: delivering,                                              // ← add this
-        fulfilled_quantity_dozen: delivering ? (qtys[item.id] ?? item.quantity_dozen) : 0,
+        fulfilled: delivering,
+        fulfilled_quantity_dozen: delivering ? (qtys[item.id] ?? item.packed_qty ?? item.quantity_dozen) : 0,
       }).eq("id", item.id);
     }
     const updatePayload = { status: "delivered", order_total: finalTotal, delivered_at: new Date().toISOString() };
@@ -481,7 +495,7 @@ export default function DeliveryDetail() {
           {formatPeso(allItemsProfit)}
         </span>
         {(() => {
-          const allTotal = items.reduce((s, i) => s + i.price_per_dozen * (qtys[i.id] ?? i.quantity_dozen), 0);
+          const allTotal = items.reduce((s, i) => s + i.price_per_dozen * (qtys[i.id] ?? i.packed_qty ?? i.quantity_dozen), 0);
           return allTotal > 0
             ? <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 600 }}>{((allItemsProfit / allTotal) * 100).toFixed(1)}% margin</span>
             : null;

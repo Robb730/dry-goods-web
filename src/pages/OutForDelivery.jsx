@@ -195,20 +195,22 @@ export default function OutForDelivery() {
       if (delivErr) throw delivErr
 
       const map = (o) => {
-        // For out_for_delivery: use quantity_dozen (not yet fulfilled)
-        // For delivered: use fulfilled_quantity_dozen
+        // Delivered: use fulfilled_quantity_dozen.
+        // Out for delivery: use packed qty (fulfilled_quantity_dozen when set
+        // by Preparing, else quantity_dozen for quick-sale / direct orders).
         const items = o.order_items ?? []
         const isDelivered = !!o.delivered_at
         const profitItems = isDelivered
           ? items.filter((i) => i.fulfilled_quantity_dozen > 0)
           : items
 
-        // Use fulfilled qty for delivered, packed qty for out-for-delivery
         const profitItemsMapped = profitItems.map((i) => ({
           ...i,
           fulfilled_quantity_dozen: isDelivered
             ? i.fulfilled_quantity_dozen
-            : i.quantity_dozen,
+            : (Number(i.fulfilled_quantity_dozen) > 0
+              ? i.fulfilled_quantity_dozen
+              : i.quantity_dozen),
         }))
 
         return {
