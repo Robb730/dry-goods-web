@@ -182,7 +182,7 @@ function StepCustomer({ selected, onSelect }) {
 }
 
 // ── Step 2: Item Picker ────────────────────────────────────────────────────
-function ItemPicker({ customer, cartItems, onCartChange }) {
+function ItemPicker({ customer, cartItems, onCartChange, onSheetOpenChange }) {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [prices, setPrices] = useState([])
@@ -192,6 +192,20 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
   const [selSize, setSelSize] = useState({})
   const [selQty, setSelQty] = useState({})
   const [cartOpen, setCartOpen] = useState(false)
+
+  // Notify parent so floating Review button can hide while sheet covers nav
+  useEffect(() => {
+    onSheetOpenChange?.(openCat != null)
+  }, [openCat, onSheetOpenChange])
+
+  // Lock background scroll while sheet is open (Layout <main> is the scroller)
+  useEffect(() => {
+    if (openCat == null) return
+    const scroller = document.getElementById('app-main-scroll')
+    const prev = scroller ? scroller.style.overflow : ''
+    if (scroller) scroller.style.overflow = 'hidden'
+    return () => { if (scroller) scroller.style.overflow = prev }
+  }, [openCat])
 
   useEffect(() => {
     async function load() {
@@ -270,8 +284,8 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
   const cartTotal = cartItems.reduce((s, i) => s + (i.subtotal ?? 0), 0)
 
   return (
-    // Extra bottom padding so content isn't hidden behind the fixed "Review Order" bar
-    <div style={{ paddingBottom: 128 }}>
+    // Clearance for floating Review pill + bottom nav on any device / font scale
+    <div style={{ paddingBottom: 'calc(var(--bottom-nav-space, 76px) + 96px)' }}>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -283,12 +297,12 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 rounded-xl px-3 bg-white mb-3" style={{ boxShadow: '0 1px 4px rgba(15,23,42,0.07)', height: 42 }}>
-        <Search size={14} color="#94a3b8" strokeWidth={2} />
+      {/* Search — 48px touch target, responsive */}
+      <div className="flex items-center gap-2 rounded-xl px-3.5 bg-white mb-3" style={{ boxShadow: '0 1px 4px rgba(15,23,42,0.07)', minHeight: 48, height: 48 }}>
+        <Search size={16} color="#94a3b8" strokeWidth={2} className="shrink-0" />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search product or item code…"
-          className="flex-1 bg-transparent outline-none text-slate-700 placeholder-slate-400" style={{ fontSize: '13px' }} />
-        {search && <button onClick={() => setSearch('')}><X size={13} color="#94a3b8" /></button>}
+          className="flex-1 min-w-0 bg-transparent outline-none text-slate-700 placeholder-slate-400" style={{ fontSize: '16px' }} />
+        {search && <button onClick={() => setSearch('')} aria-label="Clear search" className="shrink-0 active:scale-95" style={{ padding: 8, marginRight: -8 }}><X size={15} color="#94a3b8" /></button>}
       </div>
 
       {/* Collapsible cart strip */}
@@ -341,24 +355,24 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
           return (
             <div key={cat.id} className="rounded-2xl overflow-hidden"
               style={{ background: 'white', boxShadow: isOpen ? '0 4px 16px rgba(37,99,235,0.12)' : '0 1px 4px rgba(15,23,42,0.07)', border: isOpen ? '1.5px solid #dbeafe' : '1.5px solid transparent' }}>
-              <button onClick={() => handleCatTap(cat.id)} className="w-full text-left px-4 py-3.5" style={{ background: isOpen ? '#f8fafc' : 'transparent' }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <p className="font-bold text-slate-800" style={{ fontSize: '14px' }}>{cat.name}</p>
-                    {totalInCart > 0 && <span className="rounded-full flex items-center justify-center font-bold shrink-0" style={{ minWidth: 20, height: 20, padding: '0 5px', background: '#2563eb', color: 'white', fontSize: '10px' }}>{totalInCart}dz</span>}
+              <button onClick={() => handleCatTap(cat.id)} className="w-full text-left px-3.5 sm:px-4 py-3" style={{ background: isOpen ? '#f8fafc' : 'transparent', minHeight: 56 }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <p className="font-bold text-slate-800 truncate" style={{ fontSize: 'clamp(13px, 3.8vw, 14px)' }}>{cat.name}</p>
+                    {totalInCart > 0 && <span className="rounded-full flex items-center justify-center font-bold shrink-0" style={{ minWidth: 22, height: 22, padding: '0 6px', background: '#2563eb', color: 'white', fontSize: '10px' }}>{totalInCart}dz</span>}
                   </div>
                   {!isOpen && (
-                    <div className="flex gap-1 items-center">
-                      {cat.sizes.slice(0, 6).map(p => {
+                    <div className="flex gap-1 items-center shrink-0 flex-wrap justify-end" style={{ maxWidth: '52%' }}>
+                      {cat.sizes.slice(0, 4).map(p => {
                         const inCart = cartItems.some(i => i._key === String(p.id))
                         return (
-                          <span key={p.id} className="rounded-lg font-bold"
-                            style={{ fontSize: '10px', padding: '2px 7px', background: inCart ? '#dbeafe' : '#f1f5f9', color: inCart ? '#1d4ed8' : '#94a3b8', border: inCart ? '1px solid #93c5fd' : '1px solid transparent' }}>
+                          <span key={p.id} className="rounded-lg font-bold whitespace-nowrap"
+                            style={{ fontSize: '10px', padding: '3px 7px', background: inCart ? '#dbeafe' : '#f1f5f9', color: inCart ? '#1d4ed8' : '#94a3b8', border: inCart ? '1px solid #93c5fd' : '1px solid transparent' }}>
                             {p.size}
                           </span>
                         )
                       })}
-                      {cat.sizes.length > 6 && <span style={{ fontSize: '10px', color: '#cbd5e1' }}>+{cat.sizes.length - 6}</span>}
+                      {cat.sizes.length > 4 && <span className="whitespace-nowrap" style={{ fontSize: '10px', color: '#cbd5e1' }}>+{cat.sizes.length - 4}</span>}
                     </div>
                   )}
                 </div>
@@ -368,68 +382,100 @@ function ItemPicker({ customer, cartItems, onCartChange }) {
         })}
       </div>
 
-      {/* Bottom sheet when a category is open */}
+      {/* Bottom sheet when a category is open — full overlay covering bottom nav */}
       {openCat && (() => {
-        const cat = filteredCats.find(c => c.id === openCat)
+        const cat = filteredCats.find(c => c.id === openCat) ?? categories.find(c => c.id === openCat)
         if (!cat) return null
-        const activeProdId = selSize[cat.id] ?? cat.sizes[0]?.id
+        const sizes = sortSizes(products.filter(p => p.category_id === cat.id))
+        if (sizes.length === 0) return null
+        const activeProdId = selSize[cat.id] ?? sizes[0]?.id
         const activeQty = selQty[cat.id] ?? 1
         const activePrice = getPrice(activeProdId)
         const existingCartItem = cartItems.find(i => i._key === String(activeProdId))
-        const activeProduct = cat.sizes.find(p => p.id === activeProdId)
+        const activeProduct = sizes.find(p => p.id === activeProdId)
         return (
-          <div className="fixed bottom-0 left-0 right-0 md:left-[240px]" style={{ zIndex: 50, background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -8px 32px rgba(15,23,42,0.12)', borderRadius: '20px 20px 0 0', padding: '16px 16px', paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 16px))', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
-            <div className="w-full max-w-[640px] md:max-w-[720px] mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-black text-slate-800" style={{ fontSize: '15px', letterSpacing: '-0.02em' }}>{cat.name}</p>
-              <button onClick={() => setOpenCat(null)} className="rounded-full flex items-center justify-center" style={{ width: 28, height: 28, background: '#f1f5f9' }}>
-                <X size={13} color="#64748b" strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="mb-3">
-              <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Size</p>
-              <div className="flex gap-2 flex-wrap">
-                {cat.sizes.map(p => {
-                  const isActive = activeProdId === p.id
-                  const inCart = cartItems.some(i => i._key === String(p.id))
-                  return (
-                    <button key={p.id} onClick={() => setSelSize(s => ({ ...s, [cat.id]: p.id }))} className="rounded-xl font-bold transition-all"
-                      style={{ fontSize: '13px', padding: '6px 14px', background: isActive ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : inCart ? '#eff6ff' : '#f8fafc', color: isActive ? 'white' : inCart ? '#1d4ed8' : '#475569', border: inCart && !isActive ? '1.5px solid #bfdbfe' : '1.5px solid transparent', boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.3)' : 'none' }}>
-                      {p.size}{inCart && !isActive && <Check size={9} style={{ display: 'inline', marginLeft: 4, verticalAlign: 'middle' }} />}
+          <div
+            className="fixed inset-0 md:left-[240px]"
+            style={{ zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', touchAction: 'none' }}
+            role="dialog" aria-modal="true" aria-label={cat.name}
+          >
+            {/* Dim backdrop — covers list + bottom nav, tap to dismiss */}
+            <button
+              aria-label="Close"
+              onClick={() => setOpenCat(null)}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', cursor: 'default' }}
+            />
+            <div
+              className="relative w-full"
+              style={{ background: 'white', borderTop: '1.5px solid #e2e8f0', boxShadow: '0 -12px 40px rgba(15,23,42,0.22)', borderRadius: '20px 20px 0 0', maxWidth: 640, width: '100%' }}
+            >
+              <div
+                className="mx-auto w-full"
+                style={{
+                  padding: '12px 16px 0 16px',
+                  paddingBottom: 'max(20px, calc(env(safe-area-inset-bottom) + 16px))',
+                  maxHeight: 'min(85dvh, 620px)',
+                  overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-y',
+                }}
+              >
+                {/* Drag handle */}
+                <div className="mx-auto mb-2 rounded-full" style={{ width: 40, height: 4, background: '#e2e8f0' }} />
+                <div className="flex items-center justify-between gap-3 mb-3" style={{ position: 'sticky', top: 0, background: 'white', paddingTop: 4, paddingBottom: 4, zIndex: 1 }}>
+                  <p className="font-black text-slate-800 truncate" style={{ fontSize: 'clamp(15px, 4.2vw, 17px)', letterSpacing: '-0.02em' }}>{cat.name}</p>
+                  <button onClick={() => setOpenCat(null)} aria-label="Close sheet" className="rounded-full flex items-center justify-center shrink-0 active:scale-95" style={{ width: 32, height: 32, background: '#f1f5f9', minWidth: 32 }}>
+                    <X size={15} color="#64748b" strokeWidth={2.5} />
+                  </button>
+                </div>
+                <div className="mb-3">
+                  <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Size</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {sizes.map(p => {
+                      const isActive = activeProdId === p.id
+                      const inCart = cartItems.some(i => i._key === String(p.id))
+                      return (
+                        <button key={p.id} onClick={() => setSelSize(s => ({ ...s, [cat.id]: p.id }))} className="rounded-xl font-bold transition-all active:scale-95"
+                          style={{ fontSize: '13px', padding: '8px 14px', minHeight: 40, minWidth: 48, background: isActive ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : inCart ? '#eff6ff' : '#f8fafc', color: isActive ? 'white' : inCart ? '#1d4ed8' : '#475569', border: inCart && !isActive ? '1.5px solid #bfdbfe' : '1.5px solid transparent', boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.3)' : 'none' }}>
+                          {p.size}{inCart && !isActive && <Check size={9} style={{ display: 'inline', marginLeft: 4, verticalAlign: 'middle' }} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {activeProduct?.item_code && <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: 8 }}>Item code: <span style={{ fontWeight: 700, color: '#64748b' }}>{activeProduct.item_code}</span></p>}
+                </div>
+                {/* Action row — wraps on very narrow screens so Add is never clipped */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-1 rounded-xl px-2 shrink-0" style={{ background: '#f8fafc', minHeight: 48, height: 48, border: '1.5px solid #e2e8f0' }}>
+                    <button onClick={() => setSelQty(s => ({ ...s, [cat.id]: Math.max(0.5, (s[cat.id] ?? 1) - 0.5) }))} aria-label="Decrease quantity" className="active:scale-95" style={{ color: '#475569', padding: '8px 6px', minWidth: 32, minHeight: 32 }}><Minus size={15} strokeWidth={2.5} /></button>
+                    <input type="number" min="0.5" step="0.5" value={activeQty}
+                      onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0.5) setSelQty(s => ({ ...s, [cat.id]: v })) }}
+                      aria-label="Quantity in dozens"
+                      className="text-center bg-transparent outline-none text-slate-700 font-bold" style={{ width: 48, fontSize: '16px' }} />
+                    <span style={{ fontSize: '12px', color: '#94a3b8', marginRight: 2 }}>dz</span>
+                    <button onClick={() => setSelQty(s => ({ ...s, [cat.id]: (s[cat.id] ?? 1) + 0.5 }))} aria-label="Increase quantity" className="active:scale-95" style={{ color: '#475569', padding: '8px 6px', minWidth: 32, minHeight: 32 }}><Plus size={15} strokeWidth={2.5} /></button>
+                  </div>
+                  <div className="flex-1 rounded-xl px-3 flex items-center justify-end min-w-[90px]" style={{ background: '#f8fafc', minHeight: 48, height: 48 }}>
+                    <span style={{ fontSize: 'clamp(15px, 4.5vw, 17px)', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                      {activePrice != null ? formatPeso(activePrice * activeQty) : <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>No price</span>}
+                    </span>
+                  </div>
+                  <button onClick={() => handleAddToCart(cat)} disabled={activePrice == null}
+                    className="rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-transform shrink-0"
+                    style={{ minHeight: 48, height: 48, paddingLeft: 20, paddingRight: 20, flexGrow: 1, flexBasis: 110, background: activePrice == null ? '#e2e8f0' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: activePrice == null ? '#94a3b8' : 'white', fontSize: '14px', boxShadow: activePrice != null ? '0 4px 16px rgba(37,99,235,0.4)' : 'none' }}>
+                    {existingCartItem ? <><Check size={15} strokeWidth={2.5} /> Update</> : <><Plus size={15} strokeWidth={2.5} /> Add</>}
+                  </button>
+                </div>
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  {QTY_PRESETS.map(q => (
+                    <button key={q} onClick={() => setSelQty(s => ({ ...s, [cat.id]: q }))} className="rounded-lg font-bold transition-all active:scale-95"
+                      style={{ fontSize: '12px', padding: '8px 12px', minHeight: 36, background: activeQty === q ? '#0f172a' : '#f1f5f9', color: activeQty === q ? 'white' : '#64748b' }}>
+                      {q}dz
                     </button>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-              {activeProduct?.item_code && <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: 6 }}>Item code: <span style={{ fontWeight: 700, color: '#64748b' }}>{activeProduct.item_code}</span></p>}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-xl px-2" style={{ background: '#f8fafc', height: 42, border: '1.5px solid #e2e8f0' }}>
-                <button onClick={() => setSelQty(s => ({ ...s, [cat.id]: Math.max(0.5, (s[cat.id] ?? 1) - 0.5) }))} style={{ color: '#94a3b8', padding: '0 2px' }}><Minus size={13} strokeWidth={2.5} /></button>
-                <input type="number" min="0.5" step="0.5" value={activeQty}
-                  onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0.5) setSelQty(s => ({ ...s, [cat.id]: v })) }}
-                  className="text-center bg-transparent outline-none text-slate-700 font-bold" style={{ width: 40, fontSize: '13px' }} />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginRight: 2 }}>dz</span>
-                <button onClick={() => setSelQty(s => ({ ...s, [cat.id]: (s[cat.id] ?? 1) + 0.5 }))} style={{ color: '#94a3b8', padding: '0 2px' }}><Plus size={13} strokeWidth={2.5} /></button>
-              </div>
-              <div className="flex-1 rounded-xl px-3 flex items-center justify-end" style={{ background: '#f8fafc', height: 42 }}>
-                <span style={{ fontSize: '16px', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>
-                  {activePrice != null ? formatPeso(activePrice * activeQty) : <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>No price</span>}
-                </span>
-              </div>
-              <button onClick={() => handleAddToCart(cat)} disabled={activePrice == null}
-                className="rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-transform shrink-0"
-                style={{ height: 42, paddingLeft: 18, paddingRight: 18, background: activePrice == null ? '#e2e8f0' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: activePrice == null ? '#94a3b8' : 'white', fontSize: '13px', boxShadow: activePrice != null ? '0 2px 10px rgba(37,99,235,0.35)' : 'none' }}>
-                {existingCartItem ? <><Check size={14} strokeWidth={2.5} /> Update</> : <><Plus size={14} strokeWidth={2.5} /> Add</>}
-              </button>
-            </div>
-            <div className="flex gap-2 mt-2.5">
-              {QTY_PRESETS.map(q => (
-                <button key={q} onClick={() => setSelQty(s => ({ ...s, [cat.id]: q }))} className="rounded-lg font-bold transition-all"
-                  style={{ fontSize: '11px', padding: '4px 10px', background: activeQty === q ? '#0f172a' : '#f1f5f9', color: activeQty === q ? 'white' : '#64748b' }}>
-                  {q}dz
-                </button>
-              ))}
-            </div>
             </div>
           </div>
         )
@@ -511,6 +557,7 @@ export default function NewOrder() {
   const [customer, setCustomer] = useState(null)
   const [cartItems, setCartItems] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   function goNext() { setStep(s => Math.min(s + 1, 2)) }
   function goBack() {
@@ -566,20 +613,39 @@ export default function NewOrder() {
       {step === 0 && <StepCustomer selected={customer} onSelect={c => { setCustomer(c); goNext() }} />}
       {step === 1 && (
         <>
-          <ItemPicker customer={customer} cartItems={cartItems} onCartChange={setCartItems} />
+          <ItemPicker customer={customer} cartItems={cartItems} onCartChange={setCartItems} onSheetOpenChange={setSheetOpen} />
 
-          {/* Fixed "Review Order" bar — viewport-fixed (Layout <main> has no
-              transform), clears bottom nav on mobile, floats on desktop */}
-          <div
-            className="fixed left-0 right-0 md:left-[240px] bottom-[var(--bottom-nav-space,76px)] md:bottom-6 flex justify-center"
-            style={{ padding: '10px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'white', borderTop: '1px solid #f1f5f9', boxShadow: '0 -4px 24px rgba(15,23,42,0.06)', zIndex: 30 }}
-          >
-            <button onClick={goNext} disabled={!canNext}
-              className="w-full max-w-[640px] md:max-w-[720px] rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100"
-              style={{ minHeight: 48, background: canNext ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : '#e2e8f0', color: canNext ? 'white' : '#94a3b8', fontSize: '14px', letterSpacing: '-0.01em', boxShadow: canNext ? '0 4px 20px rgba(37,99,235,0.4)' : 'none' }}>
-              Review Order <ArrowRight size={15} strokeWidth={2.5} />
-            </button>
-          </div>
+          {/* Floating "Review Order" pill — transparent wrapper, button only.
+              Hidden while size sheet covers nav. Clears nav via bottom-nav-space. */}
+          {!sheetOpen && (
+            <div
+              className="fixed left-0 right-0 md:left-[240px] flex justify-center pointer-events-none"
+              style={{
+                bottom: 'calc(var(--bottom-nav-space, 76px) + 12px)',
+                padding: '0 16px',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                zIndex: 30,
+              }}
+            >
+              <button onClick={goNext} disabled={!canNext}
+                className="pointer-events-auto w-full rounded-2xl font-black flex items-center justify-center gap-2 active:scale-[0.97] transition-transform duration-100"
+                style={{
+                  maxWidth: 640,
+                  minHeight: 52,
+                  padding: '0 20px',
+                  background: canNext ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : '#e2e8f0',
+                  color: canNext ? 'white' : '#94a3b8',
+                  fontSize: 'clamp(14px, 4vw, 15px)',
+                  letterSpacing: '-0.01em',
+                  boxShadow: canNext ? '0 8px 28px rgba(37,99,235,0.45), 0 2px 8px rgba(15,23,42,0.12)' : '0 2px 8px rgba(15,23,42,0.08)',
+                }}>
+                Review Order <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
         </>
       )}
       {step === 2 && (
